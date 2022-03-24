@@ -1,0 +1,53 @@
+MODEL:
+  TYPE: "detr_multiframe"
+  WEIGHTS: "pretrained_weights/detr-dc5.pth"
+  NUM_CLASSES: 1235
+  BACKBONE: "resnet50"
+  SET_COST_CLASS: 1.0
+  SET_COST_BBOX: 5.0
+  SET_COST_GIOU: 2.0
+  TEST_RESOLUTION: 300
+  PREDICT_ACTIONS: False
+  NUM_LAYERS: 4
+  NUM_HEADS: 4
+  EMBEDDING_DIM: 256
+  BLOCK_SIZE: 2060
+  IMG_FEATURE_SIZE: 256
+  OUTPUT_SIZE: 256
+  BOX_EMB_SIZE: 256
+  EMBEDDING_PDROP: 0.1
+  RESIDUAL_PDROP: 0.1
+  ATTENTION_PDROP: 0.1
+DATASET:
+  TRAIN:
+    TYPE: "sequence"
+    MODE: "train"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train_old.json"
+    IMAGE_ROOT: "data/interactron/train"
+  TEST:
+    TYPE: "sequence"
+    MODE: "test"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val.json"
+    IMAGE_ROOT: "data/interactron/val"
+TRAINER:
+  TYPE: "direct_supervision"
+  BATCH_SIZE: 4
+  NUM_WORKERS: 4
+  MAX_EPOCHS: 500
+  LEARNING_RATE: 1e-4
+  BETA1: 0.9
+  BETA2: 0.95
+  MOMENTUM: 0.9
+  GRAD_NORM_CLIP: 1.0
+  WEIGHT_DECAY: 0.1
+  OPTIM_TYPE: "AdamW"
+  LR_DECAY: False
+  WARMUP_TOKENS: 0
+  FINAL_TOKENS: 0 # 2.5e7
+  OUTPUT_DIRECTORY: "training_results/detr_multiframe"
+EVALUATOR:
+  TYPE: "random_policy_evaluator"
+  BATCH_SIZE: 2
+  NUM_WORKERS: 2
+  OUTPUT_DIRECTORY: "evaluation_results/multi_frame_baseline"
+  CHECKPOINT: "pretrained_weights/multi_frame_old.pth"

@@ -1,0 +1,43 @@
+MODEL:
+  TYPE: "detr"
+  WEIGHTS: "pretrained_weights/detr-dc5.pth"
+  NUM_CLASSES: 1235
+  FROZEN_WEIGHTS: "pretrained_weights/detr-dc5.pth"
+  BACKBONE: "resnet50"
+  SET_COST_CLASS: 1.0
+  SET_COST_BBOX: 5.0
+  SET_COST_GIOU: 2.0
+  TEST_RESOLUTION: 300
+DATASET:
+  TRAIN:
+    TYPE: "sequence"
+    MODE: "train"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train.json"
+    IMAGE_ROOT: "data/interactron/train"
+  TEST:
+    TYPE: "sequence"
+    MODE: "test"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val.json"
+    IMAGE_ROOT: "data/interactron/val"
+TRAINER:
+  TYPE: "direct_supervision"
+  BATCH_SIZE: 2
+  NUM_WORKERS: 2
+  MAX_EPOCHS: 500
+  LEARNING_RATE: 3e-4
+  BETA1: 0.9
+  BETA2: 0.95
+  MOMENTUM: 0.9
+  GRAD_NORM_CLIP: 1.0
+  WEIGHT_DECAY: 0.1
+  OPTIM_TYPE: "Adam"
+  LR_DECAY: True
+  WARMUP_TOKENS: 0
+  FINAL_TOKENS: 1e8
+  OUTPUT_DIRECTORY: "training_results/single_frame_baseline"
+EVALUATOR:
+  TYPE: "random_policy_evaluator"
+  BATCH_SIZE: 2
+  NUM_WORKERS: 2
+  OUTPUT_DIRECTORY: "evaluation_results/single_frame_baseline"
+  CHECKPOINT: "pretrained_weights/detr.pth"
