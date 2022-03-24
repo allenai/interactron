@@ -140,7 +140,6 @@ class interactron(nn.Module):
             iip = data["initial_image_path"][task]
             rew = torch.mean(torch.stack([torch.norm(grad[i] - detector_grad[i], p=1)
                                           for i in range(len(grad))], dim=0)).item()
-            print(rew)
             if iip not in self.path_storage:
                 self.path_storage[iip] = PathStorage()
             self.path_storage[iip].add_path(data["actions"][task][:4], rew)
