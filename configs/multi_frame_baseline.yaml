@@ -22,7 +22,7 @@ DATASET:
   TRAIN:
     TYPE: "sequence"
     MODE: "train"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train_old.json"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train.json"
     IMAGE_ROOT: "data/interactron/train"
   TEST:
     TYPE: "sequence"
@@ -50,4 +50,4 @@ EVALUATOR:
   BATCH_SIZE: 2
   NUM_WORKERS: 2
   OUTPUT_DIRECTORY: "evaluation_results/multi_frame_baseline"
-  CHECKPOINT: "pretrained_weights/multi_frame_old.pth"
+  CHECKPOINT: "pretrained_weights/multi_frame.pth"
