@@ -110,11 +110,14 @@ class interactron(nn.Module):
                 "pred_logits": post_adaptive_logits,
                 "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
             }
+
             full_out_seq = {}
             for key in out_seq:
                 full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
             for key in out_seq:
                 out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[0:1]
+            for key in in_seq:
+                in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[0:1]
             task_detr_out = {}
             for key in detr_out:
                 task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[0:1]
@@ -125,6 +128,25 @@ class interactron(nn.Module):
 
             detector_loss = self.criterion(out_seq, [labels[task][0]], detector_out=task_detr_out)
             supervisor_loss = self.criterion(full_out_seq, labels[task][1:], detector_out=task_detr_full_out)
+            gt_loss = self.criterion(in_seq, [labels[task][0]], detector_out=task_detr_out)
+
+            # compute and record path reward
+            gt_grad = torch.autograd.grad(
+                gt_loss["loss_ce"],
+                self.decoder.parameters(),
+                retain_graph=True,
+                allow_unused=True,
+            )
+            iip = data["initial_image_path"][task]
+            rew = torch.mean(torch.stack([torch.norm(grad[i] - gt_grad[i], p=1)
+                                          for i in range(len(grad))], dim=0)).item()
+            if iip not in self.path_storage:
+                self.path_storage[iip] = PathStorage()
+            self.path_storage[iip].add_path(data["actions"][task][:4], rew)
+            # get path reward
+            best_path = torch.tensor(self.path_storage[iip].get_label(data["actions"][task][:4]),
+                                     dtype=torch.long, device=post_adaptive_logits.device)
+            supervisor_loss["loss_path"] = F.cross_entropy(fusion_out["actions"].view(4,4), best_path)
 
             detector_losses.append(detector_loss)
             supervisor_losses.append(supervisor_loss)
@@ -136,18 +158,6 @@ class interactron(nn.Module):
                 retain_graph=True,
                 allow_unused=True,
             )
-            # record path reward
-            iip = data["initial_image_path"][task]
-            rew = torch.mean(torch.stack([torch.norm(grad[i] - detector_grad[i], p=1)
-                                          for i in range(len(grad))], dim=0)).item()
-            print(rew)
-            if iip not in self.path_storage:
-                self.path_storage[iip] = PathStorage()
-            self.path_storage[iip].add_path(data["actions"][task][:4], rew)
-            # get path reward
-            best_path = torch.tensor(self.path_storage[iip].get_label(data["actions"][task][:4]),
-                                     dtype=torch.long, device=post_adaptive_logits.device)
-            supervisor_loss["loss_path"] = F.cross_entropy(fusion_out["actions"].view(4,4), best_path)
 
             supervisor_grad = torch.autograd.grad(
                 supervisor_loss["loss_ce"],

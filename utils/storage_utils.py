@@ -31,10 +31,13 @@ class PathStorage:
         curr = self.root
         for a in path:
             a = a.item()
+            if a is None:
+                print("wow")
             if ifga < curr.cost:
                 curr.cost = ifga
                 curr.action = a
-            curr.add_edge(Edge(curr, Node(float('inf')), a))
+            if a not in curr.get_edges():
+                curr.add_edge(Edge(curr, Node(float('inf')), a))
             curr = curr.get_edges()[a]
 
     def get_label(self, path):
