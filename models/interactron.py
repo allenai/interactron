@@ -160,7 +160,7 @@ class interactron(nn.Module):
             )
 
             supervisor_grad = torch.autograd.grad(
-                supervisor_loss["loss_ce"],
+                supervisor_loss["loss_ce"] + supervisor_loss["loss_path"],
                 self.fusion.parameters(),
                 retain_graph=True,
                 allow_unused=True
