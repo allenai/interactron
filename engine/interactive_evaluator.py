@@ -174,7 +174,8 @@ class InteractiveEvaluator:
                     detections = detections + img_detections
                     if save_results:
                         img = inv_transform(data["frames"][b][0].detach().cpu()).resize((1200, 1200))
-                        font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-C.ttf", 20)
+                        # font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-C.ttf", 20)
+                        font = ImageFont.load_default()
                         draw = ImageDraw.Draw(img)
                         for det in img_detections:
                             color = None
