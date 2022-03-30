@@ -95,9 +95,16 @@ class interactron_random(nn.Module):
                 "embedded_memory_features": detr_out["embedded_memory_features"][task:task+1].clone().detach(),
                 "box_features": detr_out["box_features"][task:task + 1].clone().detach(),
             }
-            learned_loss = torch.norm(self.fusion(in_seq)["loss"])
+            # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
+            task_detr_full_out = {}
+            for key in detr_out:
+                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
+            full_in_seq = {}
+            for key in in_seq:
+                full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
+            gt_loss = self.criterion(full_in_seq, labels[task][1:], detector_out=task_detr_full_out)
             grad = torch.autograd.grad(
-                learned_loss,
+                gt_loss["loss_ce"],
                 self.decoder.parameters(),
                 create_graph=True,
                 retain_graph=True,
@@ -108,11 +115,11 @@ class interactron_random(nn.Module):
                 "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
             }
 
-            # print(
-            #     torch.sum(torch.abs(pre_adaptive_logits[:, 0] - post_adaptive_logits[:, 0])).detach().cpu().item(),
-            #     torch.count_nonzero(pre_adaptive_logits[:, 0].argmax(-1) == post_adaptive_logits[:, 0].argmax(-1)
-            #                         ).detach().cpu().item(),
-            # )
+            print(
+                torch.sum(torch.abs(pre_adaptive_logits[:, 0] - post_adaptive_logits[:, 0])).detach().cpu().item(),
+                torch.count_nonzero(pre_adaptive_logits[:, 0].argmax(-1) == post_adaptive_logits[:, 0].argmax(-1)
+                                    ).detach().cpu().item(),
+            )
             full_out_seq = {}
             for key in out_seq:
                 full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
@@ -132,23 +139,23 @@ class interactron_random(nn.Module):
             out_logits_list.append(out_seq["pred_logits"])
 
 
-            supervisor_grad = torch.autograd.grad(
-                supervisor_loss["loss_ce"],
-                self.fusion.parameters(),
-                retain_graph=True,
-                allow_unused=True
-            )
+            # supervisor_grad = torch.autograd.grad(
+            #     supervisor_loss["loss_ce"],
+            #     self.fusion.parameters(),
+            #     retain_graph=True,
+            #     allow_unused=True
+            # )
             detector_grad = torch.autograd.grad(
                 detector_loss["loss_ce"],
                 self.decoder.parameters(),
                 retain_graph=True,
                 allow_unused=True,
             )
-            supervisor_grads.append(supervisor_grad)
+            # supervisor_grads.append(supervisor_grad)
             detector_grads.append(detector_grad)
 
         set_grad(self.decoder, detector_grads)
-        set_grad(self.fusion, supervisor_grads)
+        # set_grad(self.fusion, supervisor_grads)
 
         predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": detr_out["pred_boxes"]}
         mean_detector_losses = {k.replace("loss", "loss_detector"):
