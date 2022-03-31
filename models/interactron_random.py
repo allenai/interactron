@@ -55,8 +55,7 @@ class interactron_random(nn.Module):
         self.detector.load_state_dict(torch.load(config.WEIGHTS, map_location=torch.device('cpu'))['model'])
         # build fusion transformer
         self.fusion = Transformer(config)
-        self.logit_decoder = Decoder(config, out_dim=config.NUM_CLASSES+1)
-        self.bbox_decoder = Decoder(config, out_dim=4)
+        self.decoder = Decoder(config, out_dim=config.NUM_CLASSES+1)
         self.logger = None
         self.mode = 'train'
 
@@ -84,18 +83,14 @@ class interactron_random(nn.Module):
         detector_losses = []
         supervisor_losses = []
         out_logits_list = []
-        out_bboxes_list = []
-        detector_logit_grads = []
-        detector_bbox_grads = []
+        detector_grads = []
         supervisor_grads = []
 
         for task in range(b):
-            pre_adaptive_logits = self.logit_decoder(detr_out["box_features"].clone().detach()[task:task+1])
-            pre_adaptive_bboxes = torch.sigmoid(self.bbox_decoder(detr_out["box_features"].clone().detach()[task:task + 1]))
+            pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1])
             in_seq = {
                 "pred_logits": pre_adaptive_logits,
-                "pred_boxes": pre_adaptive_bboxes,
-                # "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach(),
+                "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach(),
                 "embedded_memory_features": detr_out["embedded_memory_features"][task:task+1].clone().detach(),
                 "box_features": detr_out["box_features"][task:task+1].clone().detach(),
             }
@@ -107,24 +102,16 @@ class interactron_random(nn.Module):
             for key in in_seq:
                 full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
             gt_loss = self.criterion(full_in_seq, labels[task][1:], detector_out=task_detr_full_out)
-            logit_grad = torch.autograd.grad(
+            grad = torch.autograd.grad(
                 gt_loss["loss_ce"],
-                self.logit_decoder.parameters(),
+                self.decoder.parameters(),
                 create_graph=True,
                 retain_graph=True,
             )
-            bbox_grad = torch.autograd.grad(
-                gt_loss["loss_giou"] + gt_loss["loss_bbox"],
-                self.bbox_decoder.parameters(),
-                create_graph=True,
-                retain_graph=True,
-            )
-            post_adaptive_logits = self.logit_decoder(detr_out["box_features"].clone().detach()[task:task + 1], logit_grad)
-            post_adaptive_bbox = torch.sigmoid(self.bbox_decoder(detr_out["box_features"].clone().detach()[task:task + 1], bbox_grad))
+            post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1], grad)
             out_seq = {
                 "pred_logits": post_adaptive_logits,
-                "pred_boxes": post_adaptive_bbox,
-                # "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
+                "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
             }
 
             print(
@@ -149,7 +136,7 @@ class interactron_random(nn.Module):
             supervisor_loss = self.criterion(full_out_seq, labels[task][1:], detector_out=task_detr_full_out)
             supervisor_losses.append(supervisor_loss)
             out_logits_list.append(out_seq["pred_logits"])
-            out_bboxes_list.append(out_seq["pred_boxes"])
+
 
             # supervisor_grad = torch.autograd.grad(
             #     supervisor_loss["loss_ce"],
@@ -157,36 +144,19 @@ class interactron_random(nn.Module):
             #     retain_graph=True,
             #     allow_unused=True
             # )
-            # detector_grad = torch.autograd.grad(
-            #     detector_loss["loss_ce"],
-            #     self.decoder.parameters(),
-            #     retain_graph=True,
-            #     allow_unused=True,
-            # )
-            # supervisor_grads.append(supervisor_grad)
-
-            detector_logit_grad = torch.autograd.grad(
+            detector_grad = torch.autograd.grad(
                 detector_loss["loss_ce"],
-                self.logit_decoder.parameters(),
-                create_graph=True,
+                self.decoder.parameters(),
                 retain_graph=True,
+                allow_unused=True,
             )
-            detector_bbox_grad = torch.autograd.grad(
-                detector_loss["loss_giou"] + detector_loss["loss_bbox"],
-                self.bbox_decoder.parameters(),
-                create_graph=True,
-                retain_graph=True,
-            )
+            # supervisor_grads.append(supervisor_grad)
+            detector_grads.append(detector_grad)
 
-            detector_logit_grads.append(detector_logit_grad)
-            detector_bbox_grads.append(detector_bbox_grad)
-
-        set_grad(self.logit_decoder, detector_logit_grads)
-        set_grad(self.bbox_decoder, detector_bbox_grads)
+        set_grad(self.decoder, detector_grads)
         # set_grad(self.fusion, supervisor_grads)
 
-        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": torch.stack(out_bboxes_list, dim=0)}
-                       # "pred_boxes": detr_out["pred_boxes"]}
+        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": detr_out["pred_boxes"]}
         mean_detector_losses = {k.replace("loss", "loss_detector"):
                                     torch.mean(torch.stack([x[k] for x in detector_losses]))
                                 for k, v in detector_losses[0].items()}
@@ -205,8 +175,7 @@ class interactron_random(nn.Module):
         # only train proposal generator of detector
         self.detector.train(False)
         self.fusion.train(mode)
-        self.logit_decoder.train(mode)
-        self.bbox_decoder.train(mode)
+        self.decoder.train(mode)
         return self
 
     def get_optimizer_groups(self, train_config):
