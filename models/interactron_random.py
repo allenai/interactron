@@ -203,7 +203,8 @@ class interactron_random(nn.Module):
         # only train proposal generator of detector
         self.detector.train(False)
         self.fusion.train(mode)
-        self.decoder.train(mode)
+        self.logit_decoder.train(mode)
+        self.bbox_decoder.train(mode)
         return self
 
     def get_optimizer_groups(self, train_config):
