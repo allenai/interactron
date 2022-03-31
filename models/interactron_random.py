@@ -84,6 +84,7 @@ class interactron_random(nn.Module):
         detector_losses = []
         supervisor_losses = []
         out_logits_list = []
+        out_bboxes_list = []
         detector_logit_grads = []
         detector_bbox_grads = []
         supervisor_grads = []
@@ -148,7 +149,7 @@ class interactron_random(nn.Module):
             supervisor_loss = self.criterion(full_out_seq, labels[task][1:], detector_out=task_detr_full_out)
             supervisor_losses.append(supervisor_loss)
             out_logits_list.append(out_seq["pred_logits"])
-
+            out_bboxes_list.append(out_seq["pred_boxes"])
 
             # supervisor_grad = torch.autograd.grad(
             #     supervisor_loss["loss_ce"],
@@ -184,7 +185,8 @@ class interactron_random(nn.Module):
         set_grad(self.bbox_decoder, detector_bbox_grads)
         # set_grad(self.fusion, supervisor_grads)
 
-        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": detr_out["pred_boxes"]}
+        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": torch.stack(out_bboxes_list, dim=0)}
+                       # "pred_boxes": detr_out["pred_boxes"]}
         mean_detector_losses = {k.replace("loss", "loss_detector"):
                                     torch.mean(torch.stack([x[k] for x in detector_losses]))
                                 for k, v in detector_losses[0].items()}
