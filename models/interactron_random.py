@@ -95,30 +95,31 @@ class interactron_random(nn.Module):
                 "box_features": detr_out["box_features"][task:task+1].clone().detach(),
             }
             # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
-            task_detr_full_out = {}
-            for key in detr_out:
-                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
-            full_in_seq = {}
-            for key in in_seq:
-                full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[:]
-            gt_loss = self.criterion(full_in_seq, labels[task][:], detector_out=task_detr_full_out)
-            grad = torch.autograd.grad(
-                gt_loss["loss_ce"],
-                self.decoder.parameters(),
-                create_graph=True,
-                retain_graph=True,
-            )
-            post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1], grad)
+            # task_detr_full_out = {}
+            # for key in detr_out:
+            #     task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
+            # full_in_seq = {}
+            # for key in in_seq:
+            #     full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[:]
+            # gt_loss = self.criterion(full_in_seq, labels[task][:], detector_out=task_detr_full_out)
+            # grad = torch.autograd.grad(
+            #     gt_loss["loss_ce"],
+            #     self.decoder.parameters(),
+            #     create_graph=True,
+            #     retain_graph=True,
+            # )
+            # post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1], grad)
             out_seq = {
-                "pred_logits": post_adaptive_logits,
+                # "pred_logits": post_adaptive_logits,
+                "pred_logits": pre_adaptive_logits,
                 "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
             }
 
-            print(
-                torch.sum(torch.abs(pre_adaptive_logits[:, 0] - post_adaptive_logits[:, 0])).detach().cpu().item(),
-                torch.count_nonzero(pre_adaptive_logits[:, 0].argmax(-1) == post_adaptive_logits[:, 0].argmax(-1)
-                                    ).detach().cpu().item(),
-            )
+            # print(
+            #     torch.sum(torch.abs(pre_adaptive_logits[:, 0] - post_adaptive_logits[:, 0])).detach().cpu().item(),
+            #     torch.count_nonzero(pre_adaptive_logits[:, 0].argmax(-1) == post_adaptive_logits[:, 0].argmax(-1)
+            #                         ).detach().cpu().item(),
+            # )
             full_out_seq = {}
             for key in out_seq:
                 full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
