@@ -151,7 +151,7 @@ class interactron_random(nn.Module):
                 allow_unused=True,
             )
             # supervisor_grads.append(supervisor_grad)
-            detector_grads.append(detector_grad)
+            detector_grads.append([dg.detach() for dg in detector_grad])
 
         set_grad(self.decoder, detector_grads)
         # set_grad(self.fusion, supervisor_grads)
