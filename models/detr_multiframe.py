@@ -15,7 +15,7 @@ class detr_multiframe(nn.Module):
         super().__init__()
         # build DETR detector
         self.detector, self.criterion, self.postprocessor = build(config)
-        self.detector.load_state_dict(torch.load(config.WEIGHTS)['model'])
+        self.detector.load_state_dict(torch.load(config.WEIGHTS, map_location=torch.device('cpu'))['model'])
         # build fusion transformer
         self.fusion = Transformer(config)
         self.logger = None

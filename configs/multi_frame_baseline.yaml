@@ -1,6 +1,6 @@
 MODEL:
   TYPE: "detr_multiframe"
-  WEIGHTS: "pretrained_weights/detr-dc5.pth"
+  WEIGHTS: "pretrained_weights/detr-dc5-backbone.pth"
   NUM_CLASSES: 1235
   BACKBONE: "resnet50"
   SET_COST_CLASS: 1.0

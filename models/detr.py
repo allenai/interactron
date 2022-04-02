@@ -1,19 +1,8 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import detectron2
-from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2.structures import Boxes, Instances
-import torchvision
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog, DatasetCatalog
 
-from utils.detection_utils import Prediction
 from models.detr_models.detr import build
 from models.detr_models.util.misc import NestedTensor
-import models.detr_models.util.transforms as T
 
 
 class detr(nn.Module):

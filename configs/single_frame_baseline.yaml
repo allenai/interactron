@@ -40,4 +40,4 @@ EVALUATOR:
   BATCH_SIZE: 2
   NUM_WORKERS: 2
   OUTPUT_DIRECTORY: "evaluation_results/single_frame_baseline"
-  CHECKPOINT: "pretrained_weights/detr.pth"
+  CHECKPOINT: "pretrained_weights/detr-dc5.pth"
