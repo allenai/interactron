@@ -138,6 +138,7 @@ class SetCriterion(nn.Module):
         # Count the number of predictions that are NOT "no-object" (which is the last class)
         card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
         card_err = F.l1_loss(card_pred.float(), tgt_lengths.float())
+        print("nonzeros:", card_pred.float().mean().item(), "tgts:", tgt_lengths.float().mean().item())
         losses = {'cardinality_error': card_err}
         return losses
 
