@@ -210,11 +210,8 @@ class RandomPolicyEvaluator:
         fps = [x for x in detections if x["type"] == "fp"]
         fns = [x for x in detections if x["type"] == "fn"]
 
-        if not save_results:
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
-            ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
-            return ap_50, len(tps), len(fps), len(fns)
-
+        p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
+        ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
         aps = []
         for thresh in np.arange(0.5, 1.0, 0.05):
             p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
@@ -236,8 +233,9 @@ class RandomPolicyEvaluator:
             p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
             aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
 
-        p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
-        ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
+        if not save_results:
+            return ap_50, np.means(aps), len(tps), len(fps), len(fns)
+
         print("AP_50:", ap_50)
 
         plt.plot(r, p)
