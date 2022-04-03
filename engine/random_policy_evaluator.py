@@ -234,7 +234,7 @@ class RandomPolicyEvaluator:
             aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
 
         if not save_results:
-            return ap_50, np.means(aps), len(tps), len(fps), len(fns)
+            return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
 
         print("AP_50:", ap_50)
 
