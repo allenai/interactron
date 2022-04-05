@@ -118,6 +118,7 @@ class SetCriterion(nn.Module):
         target_classes[idx] = target_classes_o
 
         weight = torch.ones_like(self.empty_weight)
+        weight[-1] = 0.5
         loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, weight)
         losses = {'loss_ce': loss_ce}
 
