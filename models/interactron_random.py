@@ -120,7 +120,7 @@ class interactron_random(nn.Module):
             for key in in_seq:
                 full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
 
-            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
+            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=1.0)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
             fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, self.decoder.parameters())))
 
@@ -212,9 +212,9 @@ class interactron_random(nn.Module):
             for key in detr_out:
                 task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
 
-            detector_loss = self.criterion(out_seq, [labels[task][0]], background_c=1.0)
+            detector_loss = self.criterion(out_seq, [labels[task][0]], background_c=0.1)
             detector_losses.append(detector_loss)
-            supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=1.0)
+            supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=0.1)
             supervisor_losses.append(supervisor_loss)
             out_logits_list.append(out_seq["pred_logits"])
 
