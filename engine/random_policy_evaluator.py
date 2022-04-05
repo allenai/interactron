@@ -88,6 +88,10 @@ class RandomPolicyEvaluator:
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
+                    non_background_idx = pred_scores > 0.1
+                    pred_boxes = pred_boxes[non_background_idx]
+                    pred_cats = pred_cats[non_background_idx]
+                    pred_scores = pred_scores[non_background_idx]
                     # perform nms
                     pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
                     # print("non background:", torch.count_nonzero(non_background_idx).item(),
