@@ -62,7 +62,7 @@ class Learner(nn.Module):
                 self.vars_bn.extend([running_mean, running_var])
 
             elif name in ['tanh', 'relu', 'upsample', 'avg_pool2d', 'max_pool2d',
-                          'flatten', 'reshape', 'leakyrelu', 'sigmoid']:
+                          'flatten', 'reshape', 'leakyrelu', 'sigmoid', 'ln']:
                 continue
             else:
                 raise NotImplementedError
@@ -147,6 +147,8 @@ class Learner(nn.Module):
                 idx += 2
                 bn_idx += 2
 
+            elif name is 'ln':
+                x = F.layer_norm(x, (x.size(-1),))
             elif name is 'flatten':
                 # print(x.shape)
                 x = x.view(x.size(0), -1)
