@@ -60,20 +60,20 @@ class interactron_random(nn.Module):
         self.decoder = Learner([
             ('linear', [512, config.OUTPUT_SIZE]),
             ('relu', [True]),
-            ('ln', [True]),
-            # ('bn', [512]),
+            # ('ln', [True]),
+            ('bn', [5]),
             ('linear', [512, 512]),
             ('relu', [True]),
-            ('ln', [True]),
-            # ('bn', [512]),
+            # ('ln', [True]),
+            ('bn', [5]),
             ('linear', [512, 512]),
             ('relu', [True]),
-            ('ln', [True]),
-            # ('bn', [512]),
+            # ('ln', [True]),
+            ('bn', [5]),
             ('linear', [512, 512]),
             ('relu', [True]),
-            ('ln', [True]),
-            # ('bn', [512]),
+            # ('ln', [True]),
+            ('bn', [5]),
             ('linear', [config.NUM_CLASSES+1, 512])
         ])
         self.logger = None
