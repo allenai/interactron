@@ -126,7 +126,7 @@ class interactron_random(nn.Module):
 
             gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, self.decoder.parameters())))
+            fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, self.decoder.parameters())))
 
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
                                             fast_weights, bn_training=train)
@@ -144,7 +144,7 @@ class interactron_random(nn.Module):
 
                 fast_loss = self.criterion(full_in_seq, labels[task][:], background_c=0.1)
                 grad = torch.autograd.grad(fast_loss["loss_ce"], fast_weights)
-                fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, fast_weights)))
+                fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, fast_weights)))
                 post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1],
                                                     fast_weights, bn_training=train)
 
