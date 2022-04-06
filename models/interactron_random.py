@@ -61,19 +61,19 @@ class interactron_random(nn.Module):
             ('linear', [512, config.OUTPUT_SIZE]),
             ('relu', [True]),
             # ('ln', [True]),
-            ('bn', [5]),
+            # ('bn', [5]),
             ('linear', [512, 512]),
             ('relu', [True]),
             # ('ln', [True]),
-            ('bn', [5]),
+            # ('bn', [5]),
             ('linear', [512, 512]),
             ('relu', [True]),
             # ('ln', [True]),
-            ('bn', [5]),
+            # ('bn', [5]),
             ('linear', [512, 512]),
             ('relu', [True]),
             # ('ln', [True]),
-            ('bn', [5]),
+            # ('bn', [5]),
             ('linear', [config.NUM_CLASSES+1, 512])
         ])
         self.logger = None
@@ -126,7 +126,7 @@ class interactron_random(nn.Module):
 
             gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, self.decoder.parameters())))
+            fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, self.decoder.parameters())))
 
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
                                             fast_weights, bn_training=train)
