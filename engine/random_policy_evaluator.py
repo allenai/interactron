@@ -72,7 +72,7 @@ class RandomPolicyEvaluator:
 
             # forward the model
             # model.eval()
-            predictions, losses = model(data, train=True)
+            predictions, losses = model(data, train=False)
 
             with torch.no_grad():
                 for b in range(predictions["pred_boxes"].shape[0]):

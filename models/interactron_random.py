@@ -119,12 +119,12 @@ class interactron_random(nn.Module):
             # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
             task_detr_full_out = {}
             for key in detr_out:
-                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
+                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
             full_in_seq = {}
             for key in in_seq:
-                full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[:]
+                full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
 
-            gt_loss = self.criterion(full_in_seq, labels[task][:], background_c=0.1)
+            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
             fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, self.decoder.parameters())))
 
