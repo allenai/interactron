@@ -126,12 +126,12 @@ class interactron_random(nn.Module):
 
             gt_loss = self.criterion(full_in_seq, labels[task][:], background_c=0.1)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, self.decoder.parameters())))
+            fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, self.decoder.parameters())))
 
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
                                             fast_weights, bn_training=train)
 
-            for k in range(15):
+            for k in range(19):
                 in_seq = {
                     "pred_logits": post_adaptive_logits,
                     "pred_boxes": detr_out["pred_boxes"][task:task + 1].clone().detach(),
@@ -153,7 +153,7 @@ class interactron_random(nn.Module):
                 with torch.no_grad():
                     target_loss = self.criterion(out_seq, labels[task][0:1], background_c=0.1)
                 grad = torch.autograd.grad(gt_loss["loss_ce"], fast_weights)
-                fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, fast_weights)))
+                fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, fast_weights)))
                 print(gt_loss["loss_ce"].item(), gt_loss["cardinality_error"].item(),
                       target_loss["loss_ce"].item(), target_loss["cardinality_error"].item())
 
