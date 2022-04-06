@@ -138,8 +138,8 @@ class SetCriterion(nn.Module):
         # Count the number of predictions that are NOT "no-object" (which is the last class)
         card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
         card_err = F.l1_loss(card_pred.float(), tgt_lengths.float())
-        losses = {'cardinality_error': card_err, "card_pred": card_pred.float().mean().item(),
-                  "tgt_lengths": tgt_lengths.float()}
+        losses = {'cardinality_error': card_err, "card_pred": card_pred.float().mean(),
+                  "tgt_lengths": tgt_lengths.float().mean()}
         return losses
 
     def loss_boxes(self, outputs, targets, indices, num_boxes, background_c):
