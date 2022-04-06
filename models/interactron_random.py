@@ -119,19 +119,19 @@ class interactron_random(nn.Module):
             # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
             task_detr_full_out = {}
             for key in detr_out:
-                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
+                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
             full_in_seq = {}
             for key in in_seq:
-                full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
+                full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[:]
 
-            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=1.0)
+            gt_loss = self.criterion(full_in_seq, labels[task][:], background_c=0.1)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, self.decoder.parameters())))
+            fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, self.decoder.parameters())))
 
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
                                             fast_weights, bn_training=train)
 
-            for k in range(15):
+            for k in range(5):
                 in_seq = {
                     "pred_logits": post_adaptive_logits,
                     "pred_boxes": detr_out["pred_boxes"][task:task + 1].clone().detach(),
@@ -140,55 +140,25 @@ class interactron_random(nn.Module):
                 }
                 full_in_seq = {}
                 for key in in_seq:
-                    full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
+                    full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[:]
 
-                gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=1.0)
+                # out_seq = {}
+                # for key in in_seq:
+                #     out_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[0:1]
+                # task_detr_out = {}
+                # for key in detr_out:
+                #     task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[0:1]
+
+                gt_loss = self.criterion(full_in_seq, labels[task][:], background_c=0.1)
+                # with torch.no_grad():
+                #     target_loss = self.criterion(out_seq, labels[task][0:1], background_c=0.1)
                 grad = torch.autograd.grad(gt_loss["loss_ce"], fast_weights)
-                fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, fast_weights)))
+                fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, fast_weights)))
+                # print(gt_loss["loss_ce"].item(), gt_loss["cardinality_error"].item(),
+                #       target_loss["loss_ce"].item(), target_loss["cardinality_error"].item())
 
                 post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1],
                                                     fast_weights, bn_training=True)
-
-            # this is the loss and accuracy before first update
-            # with torch.no_grad():
-            #     # [setsz, nway]
-            #     logits_q = self.net(x_qry[i], self.net.parameters(), bn_training=True)
-            #     loss_q = F.cross_entropy(logits_q, y_qry[i])
-            #     losses_q[0] += loss_q
-            #
-            #     pred_q = F.softmax(logits_q, dim=1).argmax(dim=1)
-            #     correct = torch.eq(pred_q, y_qry[i]).sum().item()
-            #     corrects[0] = corrects[0] + correct
-            #
-            # this is the loss and accuracy after the first update
-            # with torch.no_grad():
-            #     # [setsz, nway]
-            #     logits_q = self.net(x_qry[i], fast_weights, bn_training=True)
-            #     loss_q = F.cross_entropy(logits_q, y_qry[i])
-            #     losses_q[1] += loss_q
-            #     # [setsz]
-            #     pred_q = F.softmax(logits_q, dim=1).argmax(dim=1)
-            #     correct = torch.eq(pred_q, y_qry[i]).sum().item()
-            #     corrects[1] = corrects[1] + correct
-            #
-            # for k in range(1, self.update_step):
-            #     # 1. run the i-th task and compute loss for k=1~K-1
-            #     logits = self.net(x_spt[i], fast_weights, bn_training=True)
-            #     loss = F.cross_entropy(logits, y_spt[i])
-            #     # 2. compute grad on theta_pi
-            #     grad = torch.autograd.grad(loss, fast_weights)
-            #     # 3. theta_pi = theta_pi - train_lr * grad
-            #     fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
-            #
-            #     logits_q = self.net(x_qry[i], fast_weights, bn_training=True)
-            #     # loss_q will be overwritten and just keep the loss_q on last update step.
-            #     loss_q = F.cross_entropy(logits_q, y_qry[i])
-            #     losses_q[k + 1] += loss_q
-            #
-            #     with torch.no_grad():
-            #         pred_q = F.softmax(logits_q, dim=1).argmax(dim=1)
-            #         correct = torch.eq(pred_q, y_qry[i]).sum().item()  # convert to numpy
-            #         corrects[k + 1] = corrects[k + 1] + correct
 
             out_seq = {
                 "pred_logits": post_adaptive_logits,
