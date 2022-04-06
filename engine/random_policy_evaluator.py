@@ -71,8 +71,8 @@ class RandomPolicyEvaluator:
             data["boxes"] = [[j.to(self.device) for j in i] for i in data["boxes"]]
 
             # forward the model
-            model.eval()
-            predictions, losses = model(data)
+            # model.eval()
+            predictions, losses = model(data, train=False)
 
             with torch.no_grad():
                 for b in range(predictions["pred_boxes"].shape[0]):

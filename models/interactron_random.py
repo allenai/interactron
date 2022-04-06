@@ -79,7 +79,7 @@ class interactron_random(nn.Module):
         self.logger = None
         self.mode = 'train'
 
-    def forward(self, data):
+    def forward(self, data, train=True):
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
         img = data["frames"].view(b*s, c, w, h)
@@ -109,7 +109,7 @@ class interactron_random(nn.Module):
         for task in range(b):
             # pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1])
             pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
-                                           vars=None, bn_training=True)
+                                           vars=None, bn_training=train)
             in_seq = {
                 "pred_logits": pre_adaptive_logits,
                 "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach(),
@@ -124,12 +124,12 @@ class interactron_random(nn.Module):
             for key in in_seq:
                 full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
 
-            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=10.0)
+            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=1.0)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, self.decoder.parameters())))
+            fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, self.decoder.parameters())))
 
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
-                                            fast_weights, bn_training=True)
+                                            fast_weights, bn_training=train)
 
             # for k in range(5):
             #     in_seq = {
