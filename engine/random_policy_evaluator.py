@@ -72,7 +72,7 @@ class RandomPolicyEvaluator:
 
             # forward the model
             # model.eval()
-            predictions, losses = model(data, train=False)
+            predictions, losses = model(data)
 
             with torch.no_grad():
                 for b in range(predictions["pred_boxes"].shape[0]):
@@ -84,7 +84,7 @@ class RandomPolicyEvaluator:
                     gt_cats = data["category_ids"][b][0]
                     # remove background predictions
                     non_background_idx = pred_cats != 1235
-                    # pred_cats -= 1
+                    pred_cats -= 1
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
