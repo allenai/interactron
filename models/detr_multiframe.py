@@ -45,10 +45,10 @@ class detr_multiframe(nn.Module):
         del out['actions']
         for key in out:
             out[key] = out[key].reshape(b * s, *out[key].shape[2:])
-        for key in detr_out:
-            detr_out[key] = detr_out[key].reshape(b * s, *detr_out[key].shape[2:])
+        # for key in detr_out:
+        #     detr_out[key] = detr_out[key].reshape(b * s, *detr_out[key].shape[2:])
 
-        loss = self.criterion(out, labels, detector_out=detr_out)
+        loss = self.criterion(out, labels)
         # clean up predictions
         for key, val in out.items():
             out[key] = val.view(b, s, *val.shape[1:])
