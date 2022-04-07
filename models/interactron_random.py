@@ -126,27 +126,27 @@ class interactron_random(nn.Module):
 
             gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            fast_weights = list(map(lambda p: p[1] - 1.0 * p[0], zip(grad, self.decoder.parameters())))
+            fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, self.decoder.parameters())))
 
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
                                             fast_weights, bn_training=train)
 
-            # for k in range(14):
-            #     in_seq = {
-            #         "pred_logits": post_adaptive_logits,
-            #         "pred_boxes": detr_out["pred_boxes"][task:task + 1].clone().detach(),
-            #         "embedded_memory_features": detr_out["embedded_memory_features"][task:task + 1].clone().detach(),
-            #         "box_features": detr_out["box_features"][task:task + 1].clone().detach(),
-            #     }
-            #     full_in_seq = {}
-            #     for key in in_seq:
-            #         full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
-            #
-            #     fast_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
-            #     grad = torch.autograd.grad(fast_loss["loss_ce"], fast_weights)
-            #     fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, fast_weights)))
-            #     post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1],
-            #                                         fast_weights, bn_training=train)
+            for k in range(5):
+                in_seq = {
+                    "pred_logits": post_adaptive_logits,
+                    "pred_boxes": detr_out["pred_boxes"][task:task + 1].clone().detach(),
+                    "embedded_memory_features": detr_out["embedded_memory_features"][task:task + 1].clone().detach(),
+                    "box_features": detr_out["box_features"][task:task + 1].clone().detach(),
+                }
+                full_in_seq = {}
+                for key in in_seq:
+                    full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
+
+                fast_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
+                grad = torch.autograd.grad(fast_loss["loss_ce"], fast_weights)
+                fast_weights = list(map(lambda p: p[1] - 1e-3 * p[0], zip(grad, fast_weights)))
+                post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1],
+                                                    fast_weights, bn_training=train)
 
             out_seq = {
                 "pred_logits": post_adaptive_logits,
