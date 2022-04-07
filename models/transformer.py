@@ -14,7 +14,8 @@ class Transformer(nn.Module):
         self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE + config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
         self.model = GPT(config)
         self.box_decoder = MLP(config.OUTPUT_SIZE, 256, 4, 3)
-        self.logit_decoder = nn.Linear(config.OUTPUT_SIZE, config.NUM_CLASSES + 1)
+        # self.logit_decoder = nn.Linear(config.OUTPUT_SIZE, config.NUM_CLASSES + 1)
+        self.logit_decoder = self.box_decoder = MLP(config.OUTPUT_SIZE, 512, config.NUM_CLASSES + 1, 5)
         self.loss_decoder = MLP(config.OUTPUT_SIZE, 512, 1, 5)
         self.action_decoder = MLP(config.OUTPUT_SIZE, 512, 4, 5)
         self.action_tokens = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, 5, config.EMBEDDING_DIM),
