@@ -131,7 +131,7 @@ class interactron_random(nn.Module):
             post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
                                             fast_weights, bn_training=train)
 
-            for k in range(5):
+            for k in range(1):
                 in_seq = {
                     "pred_logits": post_adaptive_logits,
                     "pred_boxes": detr_out["pred_boxes"][task:task + 1].clone().detach(),
