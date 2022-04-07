@@ -53,8 +53,8 @@ class Transformer(nn.Module):
         prediction_embeddings = self.prediction_embedding(preds)
         b, s, p, n = prediction_embeddings.shape
         n_preds = prediction_embeddings.shape[1] * prediction_embeddings.shape[2]
-        pad = torch.zeros((b, 255, n), device=prediction_embeddings.device)
-        seq = torch.cat((# img_feature_embedding.reshape(b, -1, n),
+        pad = torch.zeros((b, 2060, n), device=prediction_embeddings.device)
+        seq = torch.cat((img_feature_embedding.reshape(b, -1, n),
                          prediction_embeddings.reshape(b, -1, n),
                          self.action_tokens.repeat(b,1,1).reshape(b, -1, n)), dim=1)
         pad[:, :seq.shape[1]] = seq
