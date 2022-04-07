@@ -162,15 +162,15 @@ class interactron_random(nn.Module):
             for key in out_seq:
                 full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
             for key in out_seq:
-                out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[0:1]
+                out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[:]
             task_detr_out = {}
             for key in detr_out:
-                task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[0:1]
+                task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
             task_detr_full_out = {}
             for key in detr_out:
                 task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
 
-            detector_loss = self.criterion(out_seq, [labels[task][0]], background_c=0.1)
+            detector_loss = self.criterion(out_seq, labels[task], background_c=0.1)
             detector_losses.append(detector_loss)
             supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=0.1)
             supervisor_losses.append(supervisor_loss)
