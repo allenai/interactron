@@ -33,7 +33,7 @@ class DirectSupervisionTrainer:
         self.checkpoint_path = os.path.join(self.out_dir, "detector.pt")
 
         self.train_dataset = SequenceDataset(config.DATASET.TRAIN.IMAGE_ROOT, config.DATASET.TRAIN.ANNOTATION_ROOT,
-                                        config.DATASET.TRAIN.MODE, transform=transform)
+                                        config.DATASET.TRAIN.MODE, transform=train_transform)
         self.test_dataset = SequenceDataset(config.DATASET.TEST.IMAGE_ROOT, config.DATASET.TEST.ANNOTATION_ROOT,
                                         config.DATASET.TEST.MODE, transform=transform)
 
