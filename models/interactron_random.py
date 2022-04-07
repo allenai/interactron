@@ -153,11 +153,6 @@ class interactron_random(nn.Module):
                 "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
             }
 
-            # print(
-            #     torch.sum(torch.abs(pre_adaptive_logits[:, 0] - post_adaptive_logits[:, 0])).detach().cpu().item(),
-            #     torch.count_nonzero(pre_adaptive_logits[:, 0].argmax(-1) == post_adaptive_logits[:, 0].argmax(-1)
-            #                         ).detach().cpu().item(),
-            # )
             full_out_seq = {}
             for key in out_seq:
                 full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
