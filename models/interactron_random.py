@@ -140,9 +140,9 @@ class interactron_random(nn.Module):
                 }
                 full_in_seq = {}
                 for key in in_seq:
-                    full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[:]
+                    full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
 
-                fast_loss = self.criterion(full_in_seq, labels[task][:], background_c=0.1)
+                fast_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
                 grad = torch.autograd.grad(fast_loss["loss_ce"], fast_weights)
                 fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, fast_weights)))
                 post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1],
