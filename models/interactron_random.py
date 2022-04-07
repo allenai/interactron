@@ -124,7 +124,7 @@ class interactron_random(nn.Module):
             for key in in_seq:
                 full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
 
-            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
+            gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=1.0)
             grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
             fast_weights = list(map(lambda p: p[1] - 1e-1 * p[0], zip(grad, self.decoder.parameters())))
 
