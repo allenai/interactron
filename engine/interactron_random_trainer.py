@@ -52,7 +52,7 @@ class InteractronRandomTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.SGD(raw_model.decoder.parameters(), lr=1e-3)
+        detector_optimizer = torch.optim.Adam(raw_model.decoder.parameters(), lr=1e-4)
         supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=3e-4)
 
         def run_epoch(split):
