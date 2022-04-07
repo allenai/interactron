@@ -66,7 +66,7 @@ class SequenceDataset(Dataset):
             img_bounding_boxes = []
             for k, v in state["detections"].items():
                 img_object_ids.append(hash(k.encode()))
-                img_class_ids.append(v["category_id"]+3)
+                img_class_ids.append(v["category_id"])
                 w, h, cw, ch = v["bbox"]
                 img_bounding_boxes.append([w, h, w+cw, h+ch])
             # bounding_boxes.append(img_bounding_boxes)
