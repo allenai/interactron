@@ -6,6 +6,30 @@ from models.gpt import GPT
 from models.detr_models.detr import MLP
 
 
+class MLP2(nn.Module):
+
+    def __init__(self, in_dim, emb_dim, out_dim):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(in_dim, emb_dim),
+            nn.LayerNorm(emb_dim),
+            nn.ReLU(),
+            nn.Linear(emb_dim, emb_dim),
+            nn.LayerNorm(emb_dim),
+            nn.ReLU(),
+            nn.Linear(emb_dim, emb_dim),
+            nn.LayerNorm(emb_dim),
+            nn.ReLU(),
+            nn.Linear(emb_dim, emb_dim),
+            nn.LayerNorm(emb_dim),
+            nn.ReLU(),
+            nn.Linear(emb_dim, out_dim)
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
+
 class Transformer(nn.Module):
 
     def __init__(self, config):
@@ -15,7 +39,8 @@ class Transformer(nn.Module):
         self.model = GPT(config)
         self.box_decoder = MLP(config.OUTPUT_SIZE, 256, 4, 3)
         # self.logit_decoder = nn.Linear(config.OUTPUT_SIZE, config.NUM_CLASSES + 1)
-        self.logit_decoder = self.box_decoder = MLP(config.OUTPUT_SIZE, 512, config.NUM_CLASSES + 1, 5)
+        # self.logit_decoder = MLP(config.OUTPUT_SIZE, 512, config.NUM_CLASSES + 1, 5)
+        self.logit_decoder = MLP2(config.OUTPUT_SIZE, 512, config.NUM_CLASSES + 1)
         self.loss_decoder = MLP(config.OUTPUT_SIZE, 512, 1, 5)
         self.action_decoder = MLP(config.OUTPUT_SIZE, 512, 4, 5)
         self.action_tokens = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, 5, config.EMBEDDING_DIM),
