@@ -66,7 +66,7 @@ class DirectSupervisionTrainer:
                 # place data on the correct device
                 data["frames"] = data["frames"].to(self.device)
                 data["masks"] = data["masks"].to(self.device)
-                data["category_ids"] = [[j.to(self.device)+1 for j in i] for i in data["category_ids"]]
+                data["category_ids"] = [[j.to(self.device) for j in i] for i in data["category_ids"]]
                 data["boxes"] = [[j.to(self.device) for j in i] for i in data["boxes"]]
 
                 # forward the model
