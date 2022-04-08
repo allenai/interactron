@@ -69,6 +69,13 @@ class DirectSupervisionTrainer:
                 data["category_ids"] = [[j.to(self.device) for j in i] for i in data["category_ids"]]
                 data["boxes"] = [[j.to(self.device) for j in i] for i in data["boxes"]]
 
+                # shuffle positions
+                order = torch.randperm(5)
+                data["frames"] = data["frames"][:, order]
+                data["masks"] = data["masks"][:, order]
+                data["category_ids"] = [[b[i.item()] for i in order] for b in data["category_ids"]]
+                data["boxes"] = [[b[i.item()] for i in order] for b in data["boxes"]]
+
                 # forward the model
                 predictions, losses = model(data)
                 loss = losses["loss_ce"] + losses["loss_bbox"] + losses["loss_giou"]
