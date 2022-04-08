@@ -13,6 +13,7 @@ import logging
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -112,20 +113,49 @@ class GPT(nn.Module):
         # # input embedding stem
         # self.tok_emb = nn.Embedding(config.vocab_size, config.EMBEDDING_DIM)
         self.pos_emb = nn.Parameter(torch.zeros(1, config.BLOCK_SIZE, config.EMBEDDING_DIM))
+
+        self.seq_pos_embed = nn.Parameter(torch.zeros(1, 2060, config.EMBEDDING_DIM), requires_grad=False)
+        self.embed_dim = config.EMBEDDING_DIM
+        self.img_len = 19*19
+
         self.drop = nn.Dropout(config.EMBEDDING_PDROP)
         # transformer
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.NUM_LAYERS)])
         # decoder head
         self.ln_f = nn.LayerNorm(config.EMBEDDING_DIM)
-        self.head = nn.Linear(config.EMBEDDING_DIM, config.OUTPUT_SIZE, bias=False)
 
         self.block_size = config.BLOCK_SIZE
         self.apply(self._init_weights)
+        self.init_pos_emb()
 
         logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
 
     def get_block_size(self):
         return self.block_size
+
+    def init_pos_emb(self):
+        img_sin_embed = get_2d_sincos_pos_embed(self.embed_dim // 2, int(self.img_len**.5))
+        img_pos_embed = torch.zeros((1, self.img_len, self.embed_dim))
+        img_pos_embed[:, :, :self.embed_dim // 2] = torch.from_numpy(img_sin_embed).float()
+        # self.img_pos_embed.data.copy_(img_pos_embed)
+
+        seq_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 5)
+        seq_pos_embed = torch.zeros((1, 5, self.embed_dim))
+        seq_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(seq_sin_embed).float()
+        # self.seq_pos_embed.data.copy_(seq_pos_embed)
+
+        action_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 5)
+        action_pos_embed = torch.zeros((1, 5, self.embed_dim))
+        action_pos_embed[:, :, :self.embed_dim // 2] = torch.from_numpy(action_sin_embed).float()
+
+        pos_emb = torch.zeros((1, 2060, self.embed_dim))
+        for i in range(5):
+            pos_emb[:, self.img_len*i:self.img_len*(i+1)] = img_pos_embed + seq_pos_embed[:, i, :]
+        pos_emb[:, 2055:, :] = action_pos_embed[:, :, :]
+
+        self.seq_pos_embed.data.copy_(pos_emb)
+
+
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -186,10 +216,66 @@ class GPT(nn.Module):
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
 
         # forward the GPT model
-        position_embeddings = self.pos_emb[:, :t, :] # each position maps to a (learnable) vector
+        position_embeddings = self.seq_pos_embed[:, :t, :] # each position maps to a (learnable) vector
         x = self.drop(seq + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
         logits = self.head(x)
 
         return logits
+
+
+# Positional embeddings
+def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
+    """
+    grid_size: int of the grid height and width
+    return:
+    pos_embed: [grid_size*grid_size, embed_dim] or [1+grid_size*grid_size, embed_dim] (w/ or w/o cls_token)
+    """
+    grid_h = np.arange(grid_size, dtype=np.float32)
+    grid_w = np.arange(grid_size, dtype=np.float32)
+    grid = np.meshgrid(grid_w, grid_h)  # here w goes first
+    grid = np.stack(grid, axis=0)
+
+    grid = grid.reshape([2, 1, grid_size, grid_size])
+    pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
+    if cls_token:
+        pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
+    return pos_embed
+
+
+def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
+    assert embed_dim % 2 == 0
+
+    # use half of dimensions to encode grid_h
+    emb_h = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[0])  # (H*W, D/2)
+    emb_w = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[1])  # (H*W, D/2)
+
+    emb = np.concatenate([emb_h, emb_w], axis=1) # (H*W, D)
+    return emb
+
+
+def get_1d_sincos_pos_embed(embed_dim, n):
+    grid = np.arange(n)
+    return get_1d_sincos_pos_embed_from_grid(embed_dim, grid)
+
+
+def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
+    """
+    embed_dim: output dimension for each position
+    pos: a list of positions to be encoded: size (M,)
+    out: (M, D)
+    """
+    assert embed_dim % 2 == 0
+    omega = np.arange(embed_dim // 2, dtype=np.float)
+    omega /= embed_dim / 2.
+    omega = 1. / 10000**omega  # (D/2,)
+
+    pos = pos.reshape(-1)  # (M,)
+    out = np.einsum('m,d->md', pos, omega)  # (M, D/2), outer product
+
+    emb_sin = np.sin(out) # (M, D/2)
+    emb_cos = np.cos(out) # (M, D/2)
+
+    emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
+    return emb
