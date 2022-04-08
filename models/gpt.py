@@ -139,7 +139,7 @@ class GPT(nn.Module):
         img_pos_embed[:, :, :self.embed_dim // 2] = torch.from_numpy(img_sin_embed).float()
 
         seq_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 11)
-        seq_pos_embed = torch.zeros((1, 5, self.embed_dim))
+        seq_pos_embed = torch.zeros((1, 11, self.embed_dim))
         seq_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(seq_sin_embed).float()
 
         pred_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 50)
