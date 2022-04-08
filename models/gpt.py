@@ -144,18 +144,22 @@ class GPT(nn.Module):
         seq_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(seq_sin_embed).float()
         # self.seq_pos_embed.data.copy_(seq_pos_embed)
 
+        pred_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 50)
+        pred_pos_embed = torch.zeros((1, 50, self.embed_dim))
+        pred_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(pred_sin_embed).float()
+        # self.seq_pos_embed.data.copy_(seq_pos_embed)
+
         action_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 5)
         action_pos_embed = torch.zeros((1, 5, self.embed_dim))
         action_pos_embed[:, :, :self.embed_dim // 2] = torch.from_numpy(action_sin_embed).float()
 
         pos_emb = torch.zeros((1, 2060, self.embed_dim))
         for i in range(5):
-            pos_emb[:, self.img_len*i:self.img_len*(i+1)] = img_pos_embed + seq_pos_embed[:, i, :]
+            pos_emb[:,(self.img_len+50)*i:(self.img_len+50)*i+self.img_len] = img_pos_embed + seq_pos_embed[:,i,:]
+            pos_emb[:,(self.img_len+50)*i+self.img_len:(self.img_len+50)*(i+1)] = pred_pos_embed + seq_pos_embed[:,i,:]
         pos_emb[:, 2055:, :] = action_pos_embed[:, :, :]
 
         self.seq_pos_embed.data.copy_(pos_emb)
-
-
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
