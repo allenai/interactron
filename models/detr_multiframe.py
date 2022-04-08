@@ -48,7 +48,7 @@ class detr_multiframe(nn.Module):
         # for key in detr_out:
         #     detr_out[key] = detr_out[key].reshape(b * s, *detr_out[key].shape[2:])
 
-        loss = self.criterion(out, labels, background_c=0.2)
+        loss = self.criterion(out, labels, background_c=0.1)
         # clean up predictions
         for key, val in out.items():
             out[key] = val.view(b, s, *val.shape[1:])

@@ -137,17 +137,14 @@ class GPT(nn.Module):
         img_sin_embed = get_2d_sincos_pos_embed(self.embed_dim // 2, int(self.img_len**.5))
         img_pos_embed = torch.zeros((1, self.img_len, self.embed_dim))
         img_pos_embed[:, :, :self.embed_dim // 2] = torch.from_numpy(img_sin_embed).float()
-        # self.img_pos_embed.data.copy_(img_pos_embed)
 
-        seq_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 5)
+        seq_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 11)
         seq_pos_embed = torch.zeros((1, 5, self.embed_dim))
         seq_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(seq_sin_embed).float()
-        # self.seq_pos_embed.data.copy_(seq_pos_embed)
 
         pred_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 50)
         pred_pos_embed = torch.zeros((1, 50, self.embed_dim))
         pred_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(pred_sin_embed).float() + 0.2
-        # self.seq_pos_embed.data.copy_(seq_pos_embed)
 
         action_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 5)
         action_pos_embed = torch.zeros((1, 5, self.embed_dim))
@@ -155,9 +152,10 @@ class GPT(nn.Module):
 
         pos_emb = torch.zeros((1, 2060, self.embed_dim))
         for i in range(5):
-            pos_emb[:,(self.img_len+50)*i:(self.img_len+50)*i+self.img_len] = img_pos_embed + seq_pos_embed[:,i,:]
-            pos_emb[:,(self.img_len+50)*i+self.img_len:(self.img_len+50)*(i+1)] = pred_pos_embed + seq_pos_embed[:,i,:]
-        pos_emb[:, 2055:, :] = action_pos_embed[:, :, :]
+            pos_emb[:,(self.img_len+50)*i:(self.img_len+50)*i+self.img_len] = img_pos_embed + seq_pos_embed[:,i*2,:]
+            pos_emb[:,(self.img_len+50)*i+self.img_len:(self.img_len+50)*(i+1)] = pred_pos_embed + seq_pos_embed[
+                                                                                                   :,i*2+1,:]
+        pos_emb[:, 2055:, :] = action_pos_embed[:, :, :] + seq_pos_embed[:, -1, :]
 
         self.seq_pos_embed.data.copy_(pos_emb)
 
