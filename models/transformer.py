@@ -35,7 +35,7 @@ class Transformer(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.img_feature_embedding = nn.Linear(config.IMG_FEATURE_SIZE, config.EMBEDDING_DIM)
-        self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE + config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
+        self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE, config.EMBEDDING_DIM)
         self.model = GPT(config)
         self.box_decoder = MLP(config.OUTPUT_SIZE, 256, 4, 3)
         # self.logit_decoder = nn.Linear(config.OUTPUT_SIZE, config.NUM_CLASSES + 1)
@@ -49,7 +49,8 @@ class Transformer(nn.Module):
     def forward(self, x):
         # fold data into sequence
         img_feature_embedding = self.img_feature_embedding(x["embedded_memory_features"].permute(0,1,3,4,2))
-        preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"]), dim=-1)
+        # preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"]), dim=-1)
+        preds = x["box_features"]
         prediction_embeddings = self.prediction_embedding(preds)
         b, s, p, n = prediction_embeddings.shape
         n_preds = prediction_embeddings.shape[1] * prediction_embeddings.shape[2]
