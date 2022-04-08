@@ -220,9 +220,8 @@ class GPT(nn.Module):
         x = self.drop(seq + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
-        logits = self.head(x)
 
-        return logits
+        return x
 
 
 # Positional embeddings
