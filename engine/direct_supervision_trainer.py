@@ -51,7 +51,7 @@ class DirectSupervisionTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = model.module if hasattr(self.model, "module") else model
-        optimizer = torch.optim.AdamW(raw_model.get_optimizer_groups(config), lr=1e-4)
+        optimizer = torch.optim.Adam(raw_model.get_optimizer_groups(config), lr=1e-4)
         def run_epoch(split):
             is_train = split == 'train'
             # model.train(False)
@@ -89,7 +89,7 @@ class DirectSupervisionTrainer:
 
                     # decay the learning rate based on our progress
                     if config.LR_DECAY:
-                        self.tokens += data["frames"].shape[0] * data["frames"].shape[1]
+                        self.tokens += data["frames"].shape[0]
                         if self.tokens < config.WARMUP_TOKENS:
                             # linear warmup
                             lr_mult = float(self.tokens) / float(max(1, config.WARMUP_TOKENS))

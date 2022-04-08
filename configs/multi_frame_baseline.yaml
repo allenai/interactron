@@ -41,9 +41,9 @@ TRAINER:
   GRAD_NORM_CLIP: 1.0
   WEIGHT_DECAY: 0.1
   OPTIM_TYPE: "AdamW"
-  LR_DECAY: False
-  WARMUP_TOKENS: 0
-  FINAL_TOKENS: 0 # 2.5e7
+  LR_DECAY: True
+  WARMUP_TOKENS: 2500
+  FINAL_TOKENS: 2500000
   OUTPUT_DIRECTORY: "training_results/detr_multiframe"
 EVALUATOR:
   TYPE: "random_policy_evaluator"
