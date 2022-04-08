@@ -43,15 +43,16 @@ class detr_multiframe(nn.Module):
         out = self.fusion(detr_out)
         out["pred_boxes"] = detr_out["pred_boxes"]
         del out['actions']
+        out_pruned = {}
         for key in out:
-            out[key] = out[key].reshape(b * s, *out[key].shape[2:])
+            out_pruned[key] = out[key][:, 1:].reshape(b * (s-1), *out[key].shape[2:])
         # for key in detr_out:
         #     detr_out[key] = detr_out[key].reshape(b * s, *detr_out[key].shape[2:])
 
-        loss = self.criterion(out, labels, background_c=0.1)
+        loss = self.criterion(out_pruned, [l for i, l in enumerate(labels) if i not in [0, 5, 10, 15]], background_c=0.1)
         # clean up predictions
-        for key, val in out.items():
-            out[key] = val.view(b, s, *val.shape[1:])
+        # for key, val in out.items():
+        #     out[key] = val.view(b, s, *val.shape[1:])
 
         return out, loss
 
