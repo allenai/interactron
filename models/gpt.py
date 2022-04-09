@@ -123,6 +123,7 @@ class GPT(nn.Module):
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.NUM_LAYERS)])
         # decoder head
         self.ln_f = nn.LayerNorm(config.EMBEDDING_DIM)
+        self.head = nn.Linear(config.EMBEDDING_DIM, config.OUTPUT_SIZE, bias=False)
 
         self.block_size = config.BLOCK_SIZE
         self.apply(self._init_weights)
@@ -222,8 +223,9 @@ class GPT(nn.Module):
         x = self.drop(seq + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
+        logits = self.head(x)
 
-        return x
+        return logits
 
 
 # Positional embeddings
