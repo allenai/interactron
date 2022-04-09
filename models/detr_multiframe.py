@@ -41,7 +41,7 @@ class detr_multiframe(nn.Module):
         for key in detr_out:
             detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
         out = self.fusion(detr_out)
-        out["pred_boxes"] = detr_out["pred_boxes"]
+        # out["pred_boxes"] = detr_out["pred_boxes"]
         del out['actions']
         for key in out:
             out[key] = out[key].reshape(b * s, *out[key].shape[2:])

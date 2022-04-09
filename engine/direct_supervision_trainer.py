@@ -78,7 +78,7 @@ class DirectSupervisionTrainer:
 
                 # forward the model
                 predictions, losses = model(data)
-                loss = losses["loss_ce"] + losses["loss_bbox"] + losses["loss_giou"]
+                loss = 1 * losses["loss_ce"] + 5 * losses["loss_bbox"] + 2 * losses["loss_giou"]
 
                 # log the losses
                 for name, loss_comp in losses.items():
