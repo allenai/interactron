@@ -112,7 +112,7 @@ class GPT(nn.Module):
 
         # # input embedding stem
         # self.tok_emb = nn.Embedding(config.vocab_size, config.EMBEDDING_DIM)
-        self.pos_emb = nn.Parameter(torch.zeros(1, config.BLOCK_SIZE, config.EMBEDDING_DIM))
+        self.pos_emb = nn.Parameter(torch.zeros(1, 255, config.EMBEDDING_DIM))
 
         self.seq_pos_embed = nn.Parameter(torch.zeros(1, 2060, config.EMBEDDING_DIM), requires_grad=False)
         self.embed_dim = config.EMBEDDING_DIM
@@ -219,7 +219,7 @@ class GPT(nn.Module):
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
 
         # forward the GPT model
-        position_embeddings = self.seq_pos_embed[:, :t, :] # each position maps to a (learnable) vector
+        position_embeddings = self.pos_embed[:, :t, :] # each position maps to a (learnable) vector
         x = self.drop(seq + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
