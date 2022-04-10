@@ -61,6 +61,7 @@ class detr_multiframe(nn.Module):
     def train(self, mode=True):
         self.mode = 'train' if mode else 'test'
         self.detector.train(False)
+        self.detector.transformer.decoder.train(mode)
         self.fusion.train(mode)
         return self
 
