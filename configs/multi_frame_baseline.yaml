@@ -41,7 +41,7 @@ TRAINER:
   GRAD_NORM_CLIP: 1.0
   WEIGHT_DECAY: 0.1
   OPTIM_TYPE: "AdamW"
-  LR_DECAY: True
+  LR_DECAY: False
   WARMUP_TOKENS: 1500
   FINAL_TOKENS: 150000
   OUTPUT_DIRECTORY: "training_results/detr_multiframe"
