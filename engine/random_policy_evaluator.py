@@ -87,7 +87,7 @@ class RandomPolicyEvaluator:
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
-                    pred_cats -= 1
+                    # pred_cats -= 1
                     # perform nms
                     pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
                     pred_cats = pred_cats[pruned_idxs]
