@@ -35,8 +35,8 @@ class detr_multiframe(nn.Module):
                     "boxes": data["boxes"][i][j]
                 })
         # get predictions and losses
-        with torch.no_grad():
-            detr_out = self.detector(NestedTensor(img, mask))
+        # with torch.no_grad():
+        detr_out = self.detector(NestedTensor(img, mask))
         # unfold images back into batch and sequences
         for key in detr_out:
             detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
@@ -60,7 +60,7 @@ class detr_multiframe(nn.Module):
 
     def train(self, mode=True):
         self.mode = 'train' if mode else 'test'
-        self.detector.train(False)
+        self.detector.train(mode)
         self.fusion.train(mode)
         return self
 
