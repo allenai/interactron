@@ -84,24 +84,18 @@ class RandomPolicyEvaluator:
                     gt_cats = data["category_ids"][b][0]
                     # remove background predictions
                     non_background_idx = pred_cats != 1235
-                    # pred_cats -= 1
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
+                    pred_cats -= 1
                     # perform nms
                     pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
-                    # print("non background:", torch.count_nonzero(non_background_idx).item(),
-                    #       "nms 0.5:", pruned_idxs.shape[0],
-                    #       "nms 0.25:", torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.25).shape[0],
-                    #       "nms 0.75:", torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.75).shape[0]
-                    #       )
-                    # pruned_idxs = pruned_idxs[pred_cats[pruned_idxs] != 1235]
                     pred_cats = pred_cats[pruned_idxs]
                     pred_boxes = pred_boxes[pruned_idxs]
                     pred_scores = pred_scores[pruned_idxs]
                     # get sets of categories of predictions and labels
-                    pred_cat_set = set(pred_cats)
-                    gt_cat_set = set(gt_cats)
+                    pred_cat_set = set([int(c) for c in pred_cats])
+                    gt_cat_set = set([int(c) for c in gt_cats])
                     pred_only_cat_set = set(THOR_CLASS_IDS).intersection(pred_cat_set - gt_cat_set)
                     # add each prediction to the list of detections
                     for cat in gt_cat_set:
@@ -117,7 +111,7 @@ class RandomPolicyEvaluator:
                                         "iou": cat_ious[i].max().item(),
                                         "category_match": True,
                                         "type": "tp",
-                                        "pred_cat": cat.item(),
+                                        "pred_cat": cat,
                                         "pred_score": cat_pred_scores[i].item(),
                                         "box": [coord.item() for coord in cat_pred_boxes[i]],
                                         "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
@@ -129,7 +123,7 @@ class RandomPolicyEvaluator:
                                         "iou": cat_ious[i].max().item(),
                                         "category_match": True,
                                         "type": "fp",
-                                        "pred_cat": cat.item(),
+                                        "pred_cat": cat,
                                         "pred_score": cat_pred_scores[i].item(),
                                         "box": [coord.item() for coord in cat_pred_boxes[i]],
                                         "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
@@ -142,7 +136,7 @@ class RandomPolicyEvaluator:
                                         "iou": 0.0,
                                         "category_match": False,
                                         "type": "fn",
-                                        "pred_cat": cat.item(),
+                                        "pred_cat": cat,
                                         "pred_score": 0.0,
                                         "box": [coord.item() for coord in cat_gt_boxes[j]],
                                         "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
@@ -156,7 +150,7 @@ class RandomPolicyEvaluator:
                                     "iou": 0.0,
                                     "category_match": False,
                                     "type": "fn",
-                                    "pred_cat": cat.item(),
+                                    "pred_cat": cat,
                                     "pred_score": 0.0,
                                     "box": [coord.item() for coord in cat_gt_boxes[j]],
                                     "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
@@ -171,7 +165,7 @@ class RandomPolicyEvaluator:
                                 "iou": 0.0,
                                 "category_match": False,
                                 "type": "fp",
-                                "pred_cat": cat.item(),
+                                "pred_cat": cat,
                                 "pred_score": cat_pred_scores[i].item(),
                                 "box": [coord.item() for coord in cat_pred_boxes[i]],
                                 "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
