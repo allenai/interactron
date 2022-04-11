@@ -55,13 +55,12 @@ class DETR(nn.Module):
                - "aux_outputs": Optional, only returned when auxilary losses are activated. It is a list of
                                 dictionnaries containing the two above keys for each decoder layer.
         """
-        with torch.no_grad():
-            if isinstance(samples, (list, torch.Tensor)):
-                samples = nested_tensor_from_tensor_list(samples)
-            features, pos = self.backbone(samples)
+        if isinstance(samples, (list, torch.Tensor)):
+            samples = nested_tensor_from_tensor_list(samples)
+        features, pos = self.backbone(samples)
 
-            src, mask = features[-1].decompose()
-            assert mask is not None
+        src, mask = features[-1].decompose()
+        assert mask is not None
         hs, memory = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])
         hs = hs[-1]
 
@@ -139,8 +138,7 @@ class SetCriterion(nn.Module):
         # Count the number of predictions that are NOT "no-object" (which is the last class)
         card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
         card_err = F.l1_loss(card_pred.float(), tgt_lengths.float())
-        losses = {'cardinality_error': card_err, "card_pred": card_pred.float().mean(),
-                  "tgt_lengths": tgt_lengths.float().mean()}
+        losses = {'cardinality_error': card_err}
         return losses
 
     def loss_boxes(self, outputs, targets, indices, num_boxes, background_c):
