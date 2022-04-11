@@ -210,6 +210,8 @@ class interactron_random(nn.Module):
         # set_grad(self.decoder, detector_grads)
         # set_grad(self.fusion, supervisor_grads)
 
+        set_parameters(self.detector, theta)
+
         predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": torch.stack(out_boxes_list, dim=0)}
         mean_detector_losses = {k.replace("loss", "loss_detector"):
                                     torch.mean(torch.stack([x[k] for x in detector_losses]))
