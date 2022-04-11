@@ -73,7 +73,7 @@ class InteractronRandomTrainer:
 
                 # forward the model
                 predictions, losses = model(data, train=is_train)
-                detector_loss = losses["loss_detector_ce"] + 5*losses["loss_giou_ce"] + 2*losses["loss_bbox_ce"]
+                detector_loss = losses["loss_detector_ce"] + 5*losses["loss_detector_giou"] + 2*losses["loss_detector_bbox"]
                 # supervisor_loss = losses["loss_supervisor_ce"]
 
                 # log the losses
