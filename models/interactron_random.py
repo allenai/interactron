@@ -123,7 +123,7 @@ class interactron_random(nn.Module):
             gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
             grad = torch.autograd.grad(gt_loss, theta_task)
 
-            fast_weights = sgd_step(theta_task, grad, 0.1)
+            fast_weights = sgd_step(theta_task, grad, 0.01)
             set_parameters(self.detector, fast_weights)
 
             # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
