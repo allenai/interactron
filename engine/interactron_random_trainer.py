@@ -52,7 +52,7 @@ class InteractronRandomTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.Adam(raw_model.decoder.parameters(), lr=1e-4)
+        detector_optimizer = torch.optim.Adam(raw_model.get_optimizer_groups(config), lr=1e-4)
         supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=3e-4)
 
         def run_epoch(split):
@@ -73,18 +73,18 @@ class InteractronRandomTrainer:
 
                 # forward the model
                 predictions, losses = model(data, train=is_train)
-                detector_loss = losses["loss_detector_ce"]
-                supervisor_loss = losses["loss_supervisor_ce"]
+                detector_loss = losses["loss_detector_ce"] + 5*losses["loss_giou_ce"] + 2*losses["loss_bbox_ce"]
+                # supervisor_loss = losses["loss_supervisor_ce"]
 
                 # log the losses
                 for name, loss_comp in losses.items():
                     self.logger.add_value("{}/{}".format("Train" if is_train else "Test", name), loss_comp.mean())
-                total_loss = detector_loss + supervisor_loss
+                total_loss = detector_loss # + supervisor_loss
                 self.logger.add_value("{}/Total Loss".format("Train" if is_train else "Test"), total_loss.mean())
                 loss_list.append(total_loss.item())
 
                 if is_train:
-                    supervisor_optimizer.step()
+                    # supervisor_optimizer.step()
                     detector_loss.backward()
                     detector_optimizer.step()
                     raw_model.zero_grad()

@@ -82,8 +82,10 @@ class interactron_random(nn.Module):
     def forward(self, data, train=True):
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
-        img = data["frames"].view(b*s, c, w, h)
-        mask = data["masks"].view(b*s, w, h)
+        img = data["frames"].view(b, s, c, w, h)
+        mask = data["masks"].view(b, s, w, h)
+        # img = data["frames"].view(b*s, c, w, h)
+        # mask = data["masks"].view(b*s, w, h)
         # reformat labels
         labels = []
         for i in range(b):
@@ -94,28 +96,33 @@ class interactron_random(nn.Module):
                     "boxes": data["boxes"][i][j]
                 })
         # get predictions and losses
-        with torch.no_grad():
-            detr_out = self.detector(NestedTensor(img, mask))
+        # with torch.no_grad():
+        #     detr_out = self.detector(NestedTensor(img, mask))
         # unfold images back into batch and sequences
-        for key in detr_out:
-            detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
+        # for key in detr_out:
+        #     detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
 
         detector_losses = []
         supervisor_losses = []
         out_logits_list = []
+        out_boxes_list = []
         detector_grads = []
         supervisor_grads = []
 
         for task in range(b):
             # pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1])
-            pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
-                                           vars=None, bn_training=train)
-            in_seq = {
-                "pred_logits": pre_adaptive_logits,
-                "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach(),
-                "embedded_memory_features": detr_out["embedded_memory_features"][task:task+1].clone().detach(),
-                "box_features": detr_out["box_features"][task:task+1].clone().detach(),
-            }
+            # pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
+            #                                vars=None, bn_training=train)
+            # in_seq = {
+            #     "pred_logits": pre_adaptive_logits,
+            #     "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach(),
+            #     "embedded_memory_features": detr_out["embedded_memory_features"][task:task+1].clone().detach(),
+            #     "box_features": detr_out["box_features"][task:task+1].clone().detach(),
+            # }
+
+            out_seq = self.detector(NestedTensor(img[task], mask[task]))
+
+
             # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
             # task_detr_full_out = {}
             # for key in detr_out:
@@ -153,28 +160,29 @@ class interactron_random(nn.Module):
             #     "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
             # }
 
-            out_seq = {
-                "pred_logits": pre_adaptive_logits,
-                "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
-            }
+            # out_seq = {
+            #     "pred_logits": pre_adaptive_logits,
+            #     "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
+            # }
 
-            full_out_seq = {}
-            for key in out_seq:
-                full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
-            for key in out_seq:
-                out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[:]
+            # full_out_seq = {}
+            # for key in out_seq:
+            #     full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
+            # for key in out_seq:
+            #     out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[:]
             task_detr_out = {}
-            for key in detr_out:
-                task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
-            task_detr_full_out = {}
-            for key in detr_out:
-                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
+            # for key in detr_out:
+            #     task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
+            # task_detr_full_out = {}
+            # for key in detr_out:
+            #     task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
 
             detector_loss = self.criterion(out_seq, labels[task], background_c=0.1)
             detector_losses.append(detector_loss)
-            supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=0.1)
-            supervisor_losses.append(supervisor_loss)
+            # supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=0.1)
+            # supervisor_losses.append(supervisor_loss)
             out_logits_list.append(out_seq["pred_logits"])
+            out_boxes_list.append(out_seq["pred_boxes"])
 
             # print(gt_loss["loss_ce"].item(), gt_loss["cardinality_error"].item(),
             #       detector_loss["loss_ce"].item(), detector_loss["cardinality_error"].item())
@@ -197,15 +205,15 @@ class interactron_random(nn.Module):
         # set_grad(self.decoder, detector_grads)
         # set_grad(self.fusion, supervisor_grads)
 
-        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": detr_out["pred_boxes"]}
+        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": torch.stack(out_boxes_list, dim=0)}
         mean_detector_losses = {k.replace("loss", "loss_detector"):
                                     torch.mean(torch.stack([x[k] for x in detector_losses]))
                                 for k, v in detector_losses[0].items()}
-        mean_supervisor_losses = {k.replace("loss", "loss_supervisor"):
-                                    torch.mean(torch.stack([x[k] for x in supervisor_losses]))
-                                for k, v in supervisor_losses[0].items()}
+        # mean_supervisor_losses = {k.replace("loss", "loss_supervisor"):
+        #                             torch.mean(torch.stack([x[k] for x in supervisor_losses]))
+        #                         for k, v in supervisor_losses[0].items()}
         losses = mean_detector_losses
-        losses.update(mean_supervisor_losses)
+        # losses.update(mean_supervisor_losses)
         return predictions, losses
 
     def eval(self):
@@ -214,7 +222,7 @@ class interactron_random(nn.Module):
     def train(self, mode=True):
         self.mode = 'train' if mode else 'test'
         # only train proposal generator of detector
-        self.detector.train(False)
+        self.detector.train(mode)
         self.fusion.train(mode)
         self.decoder.train(mode)
         return self
@@ -222,7 +230,7 @@ class interactron_random(nn.Module):
     def get_optimizer_groups(self, train_config):
         optim_groups = [
             {"params": list(self.decoder.parameters()), "weight_decay": 0.0},
-            {"params": list(self.fusion.parameters()), "weight_decay": 0.0},
+            {"params": list(self.detector.parameters()), "weight_decay": 0.0},
         ]
         return optim_groups
 
