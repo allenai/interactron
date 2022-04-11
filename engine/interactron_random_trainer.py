@@ -52,7 +52,7 @@ class InteractronRandomTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.Adam(raw_model.get_optimizer_groups(config), lr=1e-4)
+        detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-4)
         supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=3e-4)
 
         def run_epoch(split):
@@ -85,9 +85,10 @@ class InteractronRandomTrainer:
 
                 if is_train:
                     # supervisor_optimizer.step()
+                    detector_optimizer.zero_grad()
                     detector_loss.backward()
                     detector_optimizer.step()
-                    raw_model.zero_grad()
+                    detector_optimizer.zero_grad()
 
                     # decay the learning rate based on our progress
                     if config.LR_DECAY:

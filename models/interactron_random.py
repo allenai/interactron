@@ -7,6 +7,7 @@ from models.detr_models.detr import build
 from models.detr_models.util.misc import NestedTensor
 from models.transformer import Transformer
 from models.learner import Learner
+from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters
 
 
 class Decoder(nn.Module):
@@ -84,8 +85,6 @@ class interactron_random(nn.Module):
         b, s, c, w, h = data["frames"].shape
         img = data["frames"].view(b, s, c, w, h)
         mask = data["masks"].view(b, s, w, h)
-        # img = data["frames"].view(b*s, c, w, h)
-        # mask = data["masks"].view(b*s, w, h)
         # reformat labels
         labels = []
         for i in range(b):
@@ -95,12 +94,6 @@ class interactron_random(nn.Module):
                     "labels": data["category_ids"][i][j],
                     "boxes": data["boxes"][i][j]
                 })
-        # get predictions and losses
-        # with torch.no_grad():
-        #     detr_out = self.detector(NestedTensor(img, mask))
-        # unfold images back into batch and sequences
-        # for key in detr_out:
-        #     detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
 
         detector_losses = []
         supervisor_losses = []
@@ -108,6 +101,8 @@ class interactron_random(nn.Module):
         out_boxes_list = []
         detector_grads = []
         supervisor_grads = []
+
+        theta = get_parameters(self.detector)
 
         for task in range(b):
             # pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1])
@@ -120,8 +115,16 @@ class interactron_random(nn.Module):
             #     "box_features": detr_out["box_features"][task:task+1].clone().detach(),
             # }
 
-            out_seq = self.detector(NestedTensor(img[task], mask[task]))
+            theta_task = clone_parameters(theta)
+            set_parameters(self.detector, theta_task)
 
+            pre_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
+            gt_losses = self.criterion(pre_adaptive_out, labels[task][1:], background_c=0.1)
+            gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
+            grad = torch.autograd.grad(gt_loss, theta_task)
+
+            fast_weights = sgd_step(theta_task, grad, 0.1)
+            set_parameters(self.detector, fast_weights)
 
             # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
             # task_detr_full_out = {}
@@ -177,12 +180,14 @@ class interactron_random(nn.Module):
             # for key in detr_out:
             #     task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
 
-            detector_loss = self.criterion(out_seq, labels[task], background_c=0.1)
+            post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
+
+            detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
             detector_losses.append(detector_loss)
             # supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=0.1)
             # supervisor_losses.append(supervisor_loss)
-            out_logits_list.append(out_seq["pred_logits"])
-            out_boxes_list.append(out_seq["pred_boxes"])
+            out_logits_list.append(post_adaptive_out["pred_logits"])
+            out_boxes_list.append(post_adaptive_out["pred_boxes"])
 
             # print(gt_loss["loss_ce"].item(), gt_loss["cardinality_error"].item(),
             #       detector_loss["loss_ce"].item(), detector_loss["cardinality_error"].item())
