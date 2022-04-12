@@ -85,7 +85,7 @@ class InteractronRandomTrainer:
 
                 if is_train:
                     # supervisor_optimizer.step()
-                    detector_loss.backward()
+                    # detector_loss.backward()
                     detector_optimizer.step()
                     detector_optimizer.zero_grad()
 

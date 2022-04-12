@@ -138,7 +138,9 @@ class interactron_random(nn.Module):
             post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
             detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
-            detector_losses.append(detector_loss)
+            loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
+            loss.backward()
+            detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
 
