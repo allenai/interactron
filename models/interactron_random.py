@@ -123,17 +123,17 @@ class interactron_random(nn.Module):
             gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
             grad = torch.autograd.grad(gt_loss, theta_task)
 
-            fast_weights = sgd_step(theta_task, grad, 0.01)
+            fast_weights = sgd_step(theta_task, grad, 1e-5)
             set_parameters(self.detector, fast_weights)
 
-            # for i in range(10):
-            #     pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
-            #     gt_losses = self.criterion(pre_adaptive_out, labels[task], background_c=0.1)
-            #     gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
-            #     grad = torch.autograd.grad(gt_loss, fast_weights)
-            #
-            #     fast_weights = sgd_step(fast_weights, grad, 0.0001)
-            #     set_parameters(self.detector, fast_weights)
+            for i in range(20):
+                pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+                gt_losses = self.criterion(pre_adaptive_out, labels[task], background_c=0.1)
+                gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
+                grad = torch.autograd.grad(gt_loss, fast_weights)
+
+                fast_weights = sgd_step(fast_weights, grad, 1e-5)
+                set_parameters(self.detector, fast_weights)
 
             post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
