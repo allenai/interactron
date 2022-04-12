@@ -121,7 +121,7 @@ class interactron_random(nn.Module):
             pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
             gt_losses = self.criterion(pre_adaptive_out, labels[task], background_c=0.1)
             gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
-            grad = torch.autograd.grad(gt_loss, theta_task, create_graph=True, retain_graph=True)
+            grad = torch.autograd.grad(gt_loss, theta_task, create_graph=True, allow_unused=True)
 
             fast_weights = sgd_step(theta_task, grad, 1e-2)
             set_parameters(self.detector, fast_weights)
