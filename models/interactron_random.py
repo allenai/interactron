@@ -126,7 +126,7 @@ class interactron_random(nn.Module):
             fast_weights = sgd_step(theta_task, grad, 1e-2)
             set_parameters(self.detector, fast_weights)
 
-            for i in range(20):
+            for i in range(4):
                 pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
                 gt_losses = self.criterion(pre_adaptive_out, labels[task], background_c=0.1)
                 gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
