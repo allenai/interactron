@@ -85,9 +85,9 @@ class InteractronRandomTrainer:
 
                 if is_train:
                     # supervisor_optimizer.step()
-                    # detector_loss.backward()
-                    # detector_optimizer.step()
-                    # detector_optimizer.zero_grad()
+                    detector_loss.backward()
+                    detector_optimizer.step()
+                    detector_optimizer.zero_grad()
 
                     # decay the learning rate based on our progress
                     if config.LR_DECAY:
