@@ -118,106 +118,29 @@ class interactron_random(nn.Module):
             theta_task = clone_parameters(theta)
             set_parameters(self.detector, theta_task)
 
-            pre_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
-            gt_losses = self.criterion(pre_adaptive_out, labels[task][1:], background_c=0.1)
+            pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            gt_losses = self.criterion(pre_adaptive_out, labels[task], background_c=0.1)
             gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
             grad = torch.autograd.grad(gt_loss, theta_task)
 
-            fast_weights = sgd_step(theta_task, grad, 0.001)
+            fast_weights = sgd_step(theta_task, grad, 0.0001)
             set_parameters(self.detector, fast_weights)
 
             for i in range(10):
-                pre_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
-                gt_losses = self.criterion(pre_adaptive_out, labels[task][1:], background_c=0.1)
+                pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+                gt_losses = self.criterion(pre_adaptive_out, labels[task], background_c=0.1)
                 gt_loss = gt_losses["loss_ce"] + 5 * gt_losses["loss_bbox"] + 2 * gt_losses["loss_giou"]
                 grad = torch.autograd.grad(gt_loss, fast_weights)
 
-                fast_weights = sgd_step(fast_weights, grad, 0.001)
+                fast_weights = sgd_step(fast_weights, grad, 0.0001)
                 set_parameters(self.detector, fast_weights)
-
-            # learned_loss = torch.norm(self.fusion(in_seq)["loss"])
-            # task_detr_full_out = {}
-            # for key in detr_out:
-            #     task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
-            # full_in_seq = {}
-            # for key in in_seq:
-            #     full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
-            #
-            # gt_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
-            # grad = torch.autograd.grad(gt_loss["loss_ce"], self.decoder.parameters())
-            # fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, self.decoder.parameters())))
-            #
-            # post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1],
-            #                                 fast_weights, bn_training=train)
-            #
-            # for k in range(5):
-            #     in_seq = {
-            #         "pred_logits": post_adaptive_logits,
-            #         "pred_boxes": detr_out["pred_boxes"][task:task + 1].clone().detach(),
-            #         "embedded_memory_features": detr_out["embedded_memory_features"][task:task + 1].clone().detach(),
-            #         "box_features": detr_out["box_features"][task:task + 1].clone().detach(),
-            #     }
-            #     full_in_seq = {}
-            #     for key in in_seq:
-            #         full_in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[1:]
-            #
-            #     fast_loss = self.criterion(full_in_seq, labels[task][1:], background_c=0.1)
-            #     grad = torch.autograd.grad(fast_loss["loss_ce"], fast_weights)
-            #     fast_weights = list(map(lambda p: p[1] - 1e-2 * p[0], zip(grad, fast_weights)))
-            #     post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1],
-            #                                         fast_weights, bn_training=train)
-            #
-            # out_seq = {
-            #     "pred_logits": post_adaptive_logits,
-            #     "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
-            # }
-
-            # out_seq = {
-            #     "pred_logits": pre_adaptive_logits,
-            #     "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
-            # }
-
-            # full_out_seq = {}
-            # for key in out_seq:
-            #     full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
-            # for key in out_seq:
-            #     out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[:]
-            task_detr_out = {}
-            # for key in detr_out:
-            #     task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[:]
-            # task_detr_full_out = {}
-            # for key in detr_out:
-            #     task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
 
             post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
             detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
             detector_losses.append(detector_loss)
-            # supervisor_loss = self.criterion(full_out_seq, labels[task][1:], background_c=0.1)
-            # supervisor_losses.append(supervisor_loss)
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
-
-            # print(gt_loss["loss_ce"].item(), gt_loss["cardinality_error"].item(),
-            #       detector_loss["loss_ce"].item(), detector_loss["cardinality_error"].item())
-
-            # supervisor_grad = torch.autograd.grad(
-            #     supervisor_loss["loss_ce"],
-            #     self.fusion.parameters(),
-            #     retain_graph=True,
-            #     allow_unused=True
-            # )
-            # detector_grad = torch.autograd.grad(
-            #     detector_loss["loss_ce"],
-            #     self.decoder.parameters(),
-            #     retain_graph=True,
-            #     allow_unused=True,
-            # )
-            # supervisor_grads.append(supervisor_grad)
-            # detector_grads.append([dg.detach() for dg in detector_grad])
-
-        # set_grad(self.decoder, detector_grads)
-        # set_grad(self.fusion, supervisor_grads)
 
         set_parameters(self.detector, theta)
 
