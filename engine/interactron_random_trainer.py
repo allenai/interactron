@@ -87,7 +87,6 @@ class InteractronRandomTrainer:
                     # supervisor_optimizer.step()
                     # detector_loss.backward()
                     detector_optimizer.step()
-                    detector_optimizer.zero_grad()
 
                     # decay the learning rate based on our progress
                     if config.LR_DECAY:
@@ -112,6 +111,7 @@ class InteractronRandomTrainer:
                     pbar.set_description(
                         f"epoch {epoch} iter {it}: train loss {float(np.mean(loss_list)):.5f}. lr {lr:e}"
                     )
+                detector_optimizer.zero_grad()
 
             if not is_train:
                 test_loss = float(np.mean(loss_list))
