@@ -126,10 +126,10 @@ class interactron_random(nn.Module):
 
             post_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
             supervisor_loss = self.criterion(post_adaptive_out, labels[task][1:], background_c=0.1)
-            supervisor_losses.append({k: v for k, v in supervisor_loss.items()})
-            # supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
-            #                   2 * supervisor_loss["loss_bbox"]
-            # supervisor_loss.backward()
+            supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
+            supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
+                              2 * supervisor_loss["loss_bbox"]
+            supervisor_loss.backward()
             # supervisor_grad = torch.autograd.grad(supervisor_loss, self.fusion.parameters(), allow_unused=True)
             # supervisor_grads.append(supervisor_grad)
 
@@ -138,9 +138,9 @@ class interactron_random(nn.Module):
             set_parameters(self.detector, fast_weights)
             post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
-            detector_losses.append({k: v for k, v in detector_loss.items()})
-            # detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
-            # detector_loss.backward()
+            detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
+            detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
+            detector_loss.backward()
             # detector_grad = torch.autograd.grad(detector_loss, theta_task, allow_unused=True)
             # detector_grads.append(detector_grad)
 

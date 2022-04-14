@@ -53,7 +53,7 @@ class InteractronRandomTrainer:
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
         detector_optimizer = torch.optim.AdamW(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=3e-4)
+        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=1e-4)
 
         def run_epoch(split):
             is_train = split == 'train'
@@ -86,12 +86,12 @@ class InteractronRandomTrainer:
                 loss_list.append(total_loss.item())
 
                 if is_train:
-                    raw_model.zero_grad()
-                    detector_loss.backward()
+                    # raw_model.zero_grad()
+                    # detector_loss.backward()
                     detector_optimizer.step()
-                    supervisor_loss.backward()
+                    # supervisor_loss.backward()
                     supervisor_optimizer.step()
-                    raw_model.zero_grad()
+                    # raw_model.zero_grad()
                     # supervisor_optimizer.step()
                     # detector_loss.backward()
                     # detector_optimizer.step()
@@ -120,6 +120,7 @@ class InteractronRandomTrainer:
                         f"epoch {epoch} iter {it}: train loss {float(np.mean(loss_list)):.5f}. lr {lr:e}"
                     )
                 detector_optimizer.zero_grad()
+                supervisor_optimizer.zero_grad()
 
             if not is_train:
                 test_loss = float(np.mean(loss_list))
