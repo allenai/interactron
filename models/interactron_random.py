@@ -144,9 +144,9 @@ class interactron_random(nn.Module):
             # detector_grad = torch.autograd.grad(detector_loss, theta_task, allow_unused=True)
             # detector_grads.append(detector_grad)
 
-            print(torch.sum(pre_adaptive_out["pred_logits"][0:1] - post_adaptive_out["pred_logits"]).item(),
+            print(torch.abs(pre_adaptive_out["pred_logits"][0:1] - post_adaptive_out["pred_logits"]).sum().item(),
                   torch.count_nonzero(pre_adaptive_out["pred_logits"][0:1].argmax(-1) ==
-                                      post_adaptive_out["pred_logits"].argmax(-1)))
+                                      post_adaptive_out["pred_logits"].argmax(-1)).item())
 
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
