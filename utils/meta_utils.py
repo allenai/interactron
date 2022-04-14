@@ -23,25 +23,45 @@ def get_parameters(model):
     return tuple(flatt_children)
 
 
-def detach_parameters(model):
-    # get children form model!
-    children = list(model.children())
-    flatt_children = []
-    if children == []:
-        # if model has no children; model is last child! :O
-        for name, param in model._parameters.items():
-            if param is not None and param.requires_grad:
-                model._parameters[name] = model._parameters[name].detach()
-                model._parameters[name].requires_grad = True
-                # return [child for child in model._parameters.values() if child.requires_grad]
-    else:
-        # look for children from children... to the last child!
-        for child in children:
-            try:
-                flatt_children.extend(detach_parameters(child))
-            except TypeError:
-                flatt_children.append(detach_parameters(child))
-    return flatt_children
+# def detach_parameters(model):
+#     # get children form model!
+#     children = list(model.children())
+#     flatt_children = []
+#     if children == []:
+#         # if model has no children; model is last child! :O
+#         for name, param in model._parameters.items():
+#             if param is not None and param.requires_grad:
+#                 model._parameters[name] = model._parameters[name].detach()
+#                 model._parameters[name].requires_grad = True
+#                 # return [child for child in model._parameters.values() if child.requires_grad]
+#     else:
+#         # look for children from children... to the last child!
+#         for child in children:
+#             try:
+#                 flatt_children.extend(detach_parameters(child))
+#             except TypeError:
+#                 flatt_children.append(detach_parameters(child))
+#     return flatt_children
+
+
+def detach_parameters(params):
+    detached_params = []
+    for p in params:
+        dp = p.clone().detach()
+        dp.requires_grad = True
+        detached_params.append(dp)
+    return tuple(detached_params)
+
+
+def detach_gradients(params):
+    detached_params = []
+    for p in params:
+        if p is None:
+            detached_params.append(None)
+        else:
+            dp = p.clone().detach()
+            detached_params.append(dp)
+    return tuple(detached_params)
 
 
 def set_parameters(model, params):
@@ -114,5 +134,8 @@ def clone_parameters(params):
 def sgd_step(params, grads, lr):
     updated_params = []
     for p, g in zip(params, grads):
-        updated_params.append(p - lr * g)
+        if g is None:
+            updated_params.append(p)
+        else:
+            updated_params.append(p - lr * g)
     return tuple(updated_params)

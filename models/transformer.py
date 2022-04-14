@@ -49,7 +49,7 @@ class Transformer(nn.Module):
 
     def forward(self, x):
         # fold data into sequence
-        img_feature_embedding = self.img_feature_embedding(x["embedded_memory_features"].permute(0,1,3,4,2))
+        img_feature_embedding = self.img_feature_embedding(x["embedded_memory_features"].permute(0, 1, 3, 4, 2))
         # preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"]), dim=-1)
         preds = x["box_features"]
         prediction_embeddings = self.prediction_embedding(preds)
@@ -68,4 +68,5 @@ class Transformer(nn.Module):
         loss = self.loss_decoder(y_preds)
         actions = self.action_decoder(y[:, -5:-1].reshape(b, 4, -1))
 
-        return {"seq": y_preds, "pred_boxes": boxes, "pred_logits": logits, "loss": loss, "actions": actions}
+        return {"seq": y_preds.squeeze(), "pred_boxes": boxes.squeeze(), "pred_logits": logits.squeeze(),
+                "loss": loss, "actions": actions.squeeze()}

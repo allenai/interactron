@@ -73,8 +73,10 @@ class InteractronRandomTrainer:
 
                 # forward the model
                 predictions, losses = model(data, train=is_train)
-                detector_loss = losses["loss_detector_ce"] + 5*losses["loss_detector_giou"] + 2*losses["loss_detector_bbox"]
-                # supervisor_loss = losses["loss_supervisor_ce"]
+                detector_loss = losses["loss_detector_ce"] + 5*losses["loss_detector_giou"] + \
+                                2*losses["loss_detector_bbox"]
+                supervisor_loss = losses["loss_supervisor_ce"] +5*losses["loss_supervisor_giou"] + \
+                                  2*losses["loss_supervisor_bbox"]
 
                 # log the losses
                 for name, loss_comp in losses.items():
@@ -84,9 +86,15 @@ class InteractronRandomTrainer:
                 loss_list.append(total_loss.item())
 
                 if is_train:
+                    raw_model.zero_grad()
+                    detector_loss.backward()
+                    detector_optimizer.step()
+                    supervisor_loss.backward()
+                    supervisor_optimizer.step()
+                    raw_model.zero_grad()
                     # supervisor_optimizer.step()
                     # detector_loss.backward()
-                    detector_optimizer.step()
+                    # detector_optimizer.step()
 
                     # decay the learning rate based on our progress
                     if config.LR_DECAY:
