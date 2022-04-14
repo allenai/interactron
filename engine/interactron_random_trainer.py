@@ -53,7 +53,7 @@ class InteractronRandomTrainer:
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
         detector_optimizer = torch.optim.AdamW(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=1e-5)
+        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=1e-4)
 
         def run_epoch(split):
             is_train = split == 'train'
@@ -81,7 +81,7 @@ class InteractronRandomTrainer:
                 # log the losses
                 for name, loss_comp in losses.items():
                     self.logger.add_value("{}/{}".format("Train" if is_train else "Test", name), loss_comp.mean())
-                total_loss = detector_loss # + supervisor_loss
+                total_loss = detector_loss + supervisor_loss
                 self.logger.add_value("{}/Total Loss".format("Train" if is_train else "Test"), total_loss.mean())
                 loss_list.append(total_loss.item())
 
@@ -103,8 +103,8 @@ class InteractronRandomTrainer:
                                        float(max(1, config.FINAL_TOKENS - config.WARMUP_TOKENS))
                             lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
                         lr = config.LEARNING_RATE * lr_mult
-                        for param_group in supervisor_optimizer.param_groups:
-                            param_group['lr'] = lr
+                        # for param_group in supervisor_optimizer.param_groups:
+                        #     param_group['lr'] = lr
                         for param_group in detector_optimizer.param_groups:
                             param_group['lr'] = lr
                     else:
