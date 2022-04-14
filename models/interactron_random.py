@@ -113,45 +113,40 @@ class interactron_random(nn.Module):
             # with torch.no_grad():
             detached_theta_task = detach_parameters(theta_task)
             set_parameters(self.detector, detached_theta_task)
+            pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
+            pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
+
+            fusion_out = self.fusion(pre_adaptive_out)
+            learned_loss = torch.norm(fusion_out["loss"])
+            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
+                                                allow_unused=True)
+            fast_weights = sgd_step(detached_theta_task, detector_grad, 1e-1)
+            set_parameters(self.detector, fast_weights)
+
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
-            detector_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
+            supervisor_loss = self.criterion(post_adaptive_out, labels[task][1:], background_c=0.1)
+            supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
+            supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
+                              2 * supervisor_loss["loss_bbox"]
+            supervisor_loss.backward()
+            # supervisor_grad = torch.autograd.grad(supervisor_loss, self.fusion.parameters(), allow_unused=True)
+            # supervisor_grads.append(supervisor_grad)
+
+            # get detector grads
+            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
+            set_parameters(self.detector, fast_weights)
+            post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
+            detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
             detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
             detector_loss.backward()
+            # detector_grad = torch.autograd.grad(detector_loss, theta_task, allow_unused=True)
+            # detector_grads.append(detector_grad)
 
-            # pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
-            # pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
-            #
-            # fusion_out = self.fusion(pre_adaptive_out)
-            # learned_loss = torch.norm(fusion_out["loss"])
-            # detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
-            #                                     allow_unused=True)
-            # fast_weights = sgd_step(detached_theta_task, detector_grad, 1e-1)
-            # set_parameters(self.detector, fast_weights)
-            #
-            # post_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
-            # supervisor_loss = self.criterion(post_adaptive_out, labels[task][1:], background_c=0.1)
-            # supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
-            # supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
-            #                   2 * supervisor_loss["loss_bbox"]
-            # supervisor_loss.backward()
-            # # supervisor_grad = torch.autograd.grad(supervisor_loss, self.fusion.parameters(), allow_unused=True)
-            # # supervisor_grads.append(supervisor_grad)
-            #
-            # # get detector grads
-            # fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
-            # set_parameters(self.detector, fast_weights)
-            # post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
-            # detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
-            # detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
-            # detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
-            # detector_loss.backward()
-            # # detector_grad = torch.autograd.grad(detector_loss, theta_task, allow_unused=True)
-            # # detector_grads.append(detector_grad)
-            #
-            # print(torch.abs(pre_adaptive_out["pred_logits"][0:1] - post_adaptive_out["pred_logits"]).sum().item(),
-            #       torch.count_nonzero(pre_adaptive_out["pred_logits"][0:1].argmax(-1) ==
-            #                           post_adaptive_out["pred_logits"].argmax(-1)).item())
+            print(torch.abs(pre_adaptive_out["pred_logits"][0:1] - post_adaptive_out["pred_logits"]).sum().item(),
+                  torch.count_nonzero(pre_adaptive_out["pred_logits"][0:1].argmax(-1) ==
+                                      post_adaptive_out["pred_logits"].argmax(-1)).item())
 
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
