@@ -114,7 +114,8 @@ class GPT(nn.Module):
         # self.tok_emb = nn.Embedding(config.vocab_size, config.EMBEDDING_DIM)
         self.pos_emb = nn.Parameter(torch.zeros(1, 255, config.EMBEDDING_DIM))
 
-        self.seq_pos_embed = nn.Parameter(torch.zeros(1, 2060, config.EMBEDDING_DIM), requires_grad=False)
+        # self.seq_pos_embed = nn.Parameter(torch.zeros(1, 2060, config.EMBEDDING_DIM), requires_grad=False)
+        self.seq_pos_embed = nn.Parameter(torch.zeros(1, 2060, config.EMBEDDING_DIM), requires_grad=True)
         self.embed_dim = config.EMBEDDING_DIM
         self.img_len = 19*19
 
@@ -127,7 +128,7 @@ class GPT(nn.Module):
 
         self.block_size = config.BLOCK_SIZE
         self.apply(self._init_weights)
-        self.init_pos_emb()
+        # self.init_pos_emb()
 
         logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
 

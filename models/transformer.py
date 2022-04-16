@@ -50,7 +50,7 @@ class Transformer(nn.Module):
     def forward(self, x):
         # fold data into sequence
         img_feature_embedding = self.img_feature_embedding(x["embedded_memory_features"].permute(0, 1, 3, 4, 2))
-        preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"] * 10), dim=-1)
+        preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"]), dim=-1)
         # preds = x["box_features"]
         prediction_embeddings = self.prediction_embedding(preds)
         b, s, p, n = prediction_embeddings.shape
