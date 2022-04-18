@@ -128,23 +128,25 @@ class interactron_random(nn.Module):
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
             supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
             supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
-            # supervisor_loss = supervisor_loss["loss_ce"] + supervisor_loss["loss_giou"] + \
-            #                   supervisor_loss["loss_bbox"]
-            supervisor_loss = supervisor_loss["loss_ce"]
+            supervisor_loss = supervisor_loss["loss_ce"] + supervisor_loss["loss_giou"] + \
+                              supervisor_loss["loss_bbox"]
+            # supervisor_loss = supervisor_loss["loss_ce"]
             supervisor_loss.backward()
 
             # get detector grads
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
             set_parameters(self.detector, fast_weights)
-            post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
-            detector_loss = self.criterion(post_adaptive_out, labels[task][0:1], background_c=0.1)
+            import random
+            ridxd = random.randint(0, 5)
+            post_adaptive_out = self.detector(NestedTensor(img[task][ridxd:ridxd+1], mask[task][ridxd:ridxd+1]))
+            detector_loss = self.criterion(post_adaptive_out, labels[task][ridxd:ridxd+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
             detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
             detector_loss.backward()
 
-            print(torch.abs(pre_adaptive_out["pred_logits"][0:1] - post_adaptive_out["pred_logits"]).sum().item(),
-                  torch.count_nonzero(pre_adaptive_out["pred_logits"][0][0:1].argmax(-1) ==
-                                      post_adaptive_out["pred_logits"].argmax(-1)).item())
+            # print(torch.abs(pre_adaptive_out["pred_logits"][0:1] - post_adaptive_out["pred_logits"]).sum().item(),
+            #       torch.count_nonzero(pre_adaptive_out["pred_logits"][0][0:1].argmax(-1) ==
+            #                           post_adaptive_out["pred_logits"].argmax(-1)).item())
 
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
