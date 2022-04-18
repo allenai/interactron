@@ -128,17 +128,17 @@ class interactron_random(nn.Module):
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
             supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
             supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
-            supervisor_loss = supervisor_loss["loss_ce"] + supervisor_loss["loss_giou"] + \
-                              supervisor_loss["loss_bbox"]
+            supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
+                              2 * supervisor_loss["loss_bbox"]
             # supervisor_loss = supervisor_loss["loss_ce"]
             supervisor_loss.backward()
 
             # get detector grads
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
             set_parameters(self.detector, fast_weights)
-            # import random
-            # ridx = random.randint(0, 4)
-            ridx = 0
+            import random
+            ridx = random.randint(0, 4)
+            # ridx = 0
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
