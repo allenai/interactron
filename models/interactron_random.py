@@ -118,24 +118,25 @@ class interactron_random(nn.Module):
             pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
             pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
 
-            fusion_out = self.fusion(pre_adaptive_out)
-            learned_loss = torch.norm(fusion_out["loss"])
-            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
-                                                allow_unused=True)
-            fast_weights = sgd_step(detached_theta_task, detector_grad, 1e-1)
-            set_parameters(self.detector, fast_weights)
-
-            post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
-            supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
-            supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
-            supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
-                              2 * supervisor_loss["loss_bbox"]
-            # supervisor_loss = supervisor_loss["loss_ce"]
-            supervisor_loss.backward()
-
-            # get detector grads
-            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
-            set_parameters(self.detector, fast_weights)
+            # fusion_out = self.fusion(pre_adaptive_out)
+            # learned_loss = torch.norm(fusion_out["loss"])
+            # detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
+            #                                     allow_unused=True)
+            # fast_weights = sgd_step(detached_theta_task, detector_grad, 1e-1)
+            # set_parameters(self.detector, fast_weights)
+            #
+            # post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            # supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
+            # supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
+            # supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
+            #                   2 * supervisor_loss["loss_bbox"]
+            # # supervisor_loss = supervisor_loss["loss_ce"]
+            # supervisor_loss.backward()
+            #
+            # # get detector grads
+            # fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
+            # set_parameters(self.detector, fast_weights)
+            set_parameters(self.detector, theta_task)
             import random
             ridx = random.randint(0, 4)
             # ridx = 0
