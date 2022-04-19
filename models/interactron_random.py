@@ -110,13 +110,13 @@ class interactron_random(nn.Module):
             theta_task = clone_parameters(theta)
 
             # get supervisor grads
-            detached_theta_task = detach_parameters(theta_task)
-            set_parameters(self.detector, detached_theta_task)
-            pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
-            pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
-            pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
-            pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
-            pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
+            # detached_theta_task = detach_parameters(theta_task)
+            # set_parameters(self.detector, detached_theta_task)
+            # pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            # pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
+            # pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
+            # pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
+            # pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
 
             # fusion_out = self.fusion(pre_adaptive_out)
             # learned_loss = torch.norm(fusion_out["loss"])
