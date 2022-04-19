@@ -11,39 +11,39 @@ from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_par
     detach_gradients
 
 
-class Decoder(nn.Module):
-
-    def __init__(self, config, out_dim=4):
-        super().__init__()
-        parameter_list = [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, config.OUTPUT_SIZE), a=math.sqrt(5)))]
-        parameter_list += [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, 512), a=math.sqrt(5))) for _ in range(3)]
-        parameter_list.append(nn.Parameter(nn.init.kaiming_uniform_(torch.empty(out_dim, 512), a=math.sqrt(5))))
-        self.weights = nn.ParameterList(parameter_list)
-
-    def forward(self, x, grads=None, lr=1e-3):
-        for i in range(len(self.weights) - 1):
-            if grads is None:
-                x = F.relu(F.linear(x, self.weights[i]))
-            else:
-                x = F.relu(F.linear(x, self.weights[i] - lr * grads[i]))
-        if grads is None:
-            x = F.linear(x, self.weights[-1])
-        else:
-            x = F.linear(x, self.weights[-1] - lr * grads[-1])
-        return x
-
-    def set_grad(self, grads):
-        for i in range(len(self.weights)):
-            grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
-            self.weights[i].grad = grad
-
-
-def set_grad(model, grads):
-    for i, p in enumerate(model.parameters()):
-        if grads[0][i] is None:
-            continue
-        grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
-        p.grad = grad
+# class Decoder(nn.Module):
+#
+#     def __init__(self, config, out_dim=4):
+#         super().__init__()
+#         parameter_list = [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, config.OUTPUT_SIZE), a=math.sqrt(5)))]
+#         parameter_list += [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, 512), a=math.sqrt(5))) for _ in range(3)]
+#         parameter_list.append(nn.Parameter(nn.init.kaiming_uniform_(torch.empty(out_dim, 512), a=math.sqrt(5))))
+#         self.weights = nn.ParameterList(parameter_list)
+#
+#     def forward(self, x, grads=None, lr=1e-3):
+#         for i in range(len(self.weights) - 1):
+#             if grads is None:
+#                 x = F.relu(F.linear(x, self.weights[i]))
+#             else:
+#                 x = F.relu(F.linear(x, self.weights[i] - lr * grads[i]))
+#         if grads is None:
+#             x = F.linear(x, self.weights[-1])
+#         else:
+#             x = F.linear(x, self.weights[-1] - lr * grads[-1])
+#         return x
+#
+#     def set_grad(self, grads):
+#         for i in range(len(self.weights)):
+#             grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
+#             self.weights[i].grad = grad
+#
+#
+# def set_grad(model, grads):
+#     for i, p in enumerate(model.parameters()):
+#         if grads[0][i] is None:
+#             continue
+#         grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
+#         p.grad = grad
 
 
 class interactron_random(nn.Module):
@@ -59,25 +59,25 @@ class interactron_random(nn.Module):
         # build fusion transformer
         self.fusion = Transformer(config)
         # self.decoder = Decoder(config, out_dim=config.NUM_CLASSES+1)
-        self.decoder = Learner([
-            ('linear', [512, config.OUTPUT_SIZE]),
-            ('relu', [True]),
-            # ('ln', [True]),
-            ('bn', [5]),
-            ('linear', [512, 512]),
-            ('relu', [True]),
-            # ('ln', [True]),
-            ('bn', [5]),
-            ('linear', [512, 512]),
-            ('relu', [True]),
-            # ('ln', [True]),
-            ('bn', [5]),
-            ('linear', [512, 512]),
-            ('relu', [True]),
-            # ('ln', [True]),
-            ('bn', [5]),
-            ('linear', [config.NUM_CLASSES+1, 512])
-        ])
+        # self.decoder = Learner([
+        #     ('linear', [512, config.OUTPUT_SIZE]),
+        #     ('relu', [True]),
+        #     # ('ln', [True]),
+        #     ('bn', [5]),
+        #     ('linear', [512, 512]),
+        #     ('relu', [True]),
+        #     # ('ln', [True]),
+        #     ('bn', [5]),
+        #     ('linear', [512, 512]),
+        #     ('relu', [True]),
+        #     # ('ln', [True]),
+        #     ('bn', [5]),
+        #     ('linear', [512, 512]),
+        #     ('relu', [True]),
+        #     # ('ln', [True]),
+        #     ('bn', [5]),
+        #     ('linear', [config.NUM_CLASSES+1, 512])
+        # ])
         self.logger = None
         self.mode = 'train'
 
