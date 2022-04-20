@@ -79,7 +79,8 @@ class DirectSupervisionTrainer:
 
                 # forward the model
                 predictions, losses = model(data)
-                loss = 1 * losses["loss_ce"] + 5 * losses["loss_bbox"] + 2 * losses["loss_giou"]
+                loss = losses["loss_detector_ce"] + 5 * losses["loss_detector_bbox"] \
+                       + 2 * losses["loss_detector_giou"]
 
                 # log the losses
                 for name, loss_comp in losses.items():
@@ -90,10 +91,11 @@ class DirectSupervisionTrainer:
                 if is_train:
 
                     # backprop and update the parameters
-                    model.zero_grad()
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_NORM_CLIP)
+                    # model.zero_grad()
+                    # loss.backward()
+                    # torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_NORM_CLIP)
                     optimizer.step()
+                    optimizer.zero_grad()
 
                     # decay the learning rate based on our progress
                     if config.LR_DECAY:
@@ -139,6 +141,7 @@ class DirectSupervisionTrainer:
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
                 mAP = run_evaluation()
+            optimizer.zero_grad()
             self.logger.log_values()
 
             # supports early stopping based on the test loss, or just save always if no test set is provided

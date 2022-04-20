@@ -31,8 +31,8 @@ DATASET:
     IMAGE_ROOT: "data/interactron/val"
 TRAINER:
   TYPE: "direct_supervision"
-  BATCH_SIZE: 4
-  NUM_WORKERS: 4
+  BATCH_SIZE: 16
+  NUM_WORKERS: 16
   MAX_EPOCHS: 500
   LEARNING_RATE: 1e-5
   BETA1: 0.9
@@ -41,13 +41,13 @@ TRAINER:
   GRAD_NORM_CLIP: 1.0
   WEIGHT_DECAY: 0.1
   OPTIM_TYPE: "AdamW"
-  LR_DECAY: True
-  WARMUP_TOKENS: 1500
-  FINAL_TOKENS: 750000
+  LR_DECAY: Flase
+  WARMUP_TOKENS: 0
+  FINAL_TOKENS: 0
   OUTPUT_DIRECTORY: "training_results/detr_multiframe"
 EVALUATOR:
   TYPE: "random_policy_evaluator"
-  BATCH_SIZE: 2
-  NUM_WORKERS: 2
+  BATCH_SIZE: 1
+  NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/multi_frame_baseline"
   CHECKPOINT: "pretrained_weights/multi_frame.pth"
