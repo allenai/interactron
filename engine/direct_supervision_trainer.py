@@ -52,6 +52,7 @@ class DirectSupervisionTrainer:
         model, config = self.model, self.config.TRAINER
         raw_model = model.module if hasattr(self.model, "module") else model
         optimizer = torch.optim.AdamW(raw_model.get_optimizer_groups(config), lr=1e-5, weight_decay=1e-4)
+
         def run_epoch(split):
             is_train = split == 'train'
             # model.train(False)
