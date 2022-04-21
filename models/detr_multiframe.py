@@ -67,8 +67,8 @@ class detr_multiframe(nn.Module):
             # for key, val in out.items():
             #     out[key] = val.view(b, s, *val.shape[1:])
 
-            out_logits_list.append(out["pred_logits"])
-            out_boxes_list.append(out["pred_boxes"])
+            out_logits_list.append(out["pred_logits"][0:1])
+            out_boxes_list.append(out["pred_boxes"][0:1])
 
         predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": torch.stack(out_boxes_list, dim=0)}
         losses = {k.replace("loss", "loss_detector"):
