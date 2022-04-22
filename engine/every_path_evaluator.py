@@ -67,7 +67,7 @@ class EveryPathEvaluator:
         all_aps = {ac: [] for ac in all_action_combos}
         all_aps50 = {ac: [] for ac in all_action_combos}
 
-        for i in range(len(self.test_dataset)):
+        for i in tqdm(range(len(self.test_dataset))):
             for ac in all_action_combos:
 
                 # print(ac)
@@ -292,7 +292,7 @@ class EveryPathEvaluator:
         #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
         #     aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
 
-        print("AP_50:", ap_50)
+        # print("AP_50:", ap_50)
         return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
 
     @staticmethod
