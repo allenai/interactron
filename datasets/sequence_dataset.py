@@ -49,7 +49,6 @@ class SequenceDataset(Dataset):
         state = scene["state_table"][state_name]
         if actions is None:
             actions = [random.choice(self.annotations["metadata"]["actions"]) for _ in range(5)]
-            print(idx, actions)
         frames = []
         masks = []
         object_ids = []
