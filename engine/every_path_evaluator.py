@@ -55,6 +55,7 @@ class EveryPathEvaluator:
 
     def evaluate(self, save_results=False):
 
+
         # prepare data folder if we are saving
         if save_results:
             os.makedirs(self.out_dir + "images/", exist_ok=True)
@@ -63,6 +64,8 @@ class EveryPathEvaluator:
 
         detections = []
         all_action_combos = [i for i in itertools.product(ACTIONS, repeat=4)]
+        all_aps = {ac: [] for ac in all_action_combos}
+        all_aps50 = {ac: [] for ac in all_action_combos}
         for ac in all_action_combos:
 
             print(ac)
@@ -176,7 +179,10 @@ class EveryPathEvaluator:
                                                  (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
                                 "img": data["initial_image_path"][b],
                             })
-                    self.compute_ap(img_detections)
+
+                    ap50, ap, tp, fp, fn = self.compute_ap(img_detections)
+                    all_aps[ac].append(ap)
+                    all_aps50[ac].append(ap50)
                     detections = detections + img_detections
 
                     # if save_results:
@@ -253,6 +259,9 @@ class EveryPathEvaluator:
         # with open(self.out_dir + "results.json", 'w') as f:
         #     json.dump(results, f)
 
+        with open("all_aps.json", 'w') as f:
+            json.dump({"ap": all_aps, "ap50": all_aps50}, f)
+
     def compute_ap(self, detections):
         tps = [x for x in detections if x["type"] == "tp"]
         fps = [x for x in detections if x["type"] == "fp"]
@@ -265,21 +274,21 @@ class EveryPathEvaluator:
             p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
             aps.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
 
-        aps_small = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=0.0, max_area=32**2/300**2)
-            aps_small.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-
-        aps_medium = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh,
-                                    min_area=32**2/300**2, max_area=96**2/300**2)
-            aps_medium.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-
-        aps_large = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
-            aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        # aps_small = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=0.0, max_area=32**2/300**2)
+        #     aps_small.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        #
+        # aps_medium = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh,
+        #                             min_area=32**2/300**2, max_area=96**2/300**2)
+        #     aps_medium.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        #
+        # aps_large = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
+        #     aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
 
         print("AP_50:", ap_50)
         return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
