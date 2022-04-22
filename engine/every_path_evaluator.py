@@ -66,79 +66,95 @@ class EveryPathEvaluator:
         all_action_combos = [i for i in itertools.product(ACTIONS, repeat=4)]
         all_aps = {ac: [] for ac in all_action_combos}
         all_aps50 = {ac: [] for ac in all_action_combos}
-        for ac in all_action_combos:
 
-            print(ac)
+        for i in range(len(self.test_dataset)):
+            for ac in all_action_combos:
 
-            data = self.test_dataset.__getitem__(8, actions=ac)
+                # print(ac)
 
-            # place data on the correct device
-            data["frames"] = torch.stack(data["frames"], dim=0).to(self.device).unsqueeze(0)
-            data["masks"] = torch.stack(data["masks"], dim=0).to(self.device).unsqueeze(0)
-            data["category_ids"] = [[i.to(self.device) for i in data["category_ids"]]]
-            data["boxes"] = [[i.to(self.device) for i in data["boxes"]]]
+                data = self.test_dataset.__getitem__(i, actions=ac)
 
-            # forward the model
-            predictions, losses = model(data)
+                # place data on the correct device
+                data["frames"] = torch.stack(data["frames"], dim=0).to(self.device).unsqueeze(0)
+                data["masks"] = torch.stack(data["masks"], dim=0).to(self.device).unsqueeze(0)
+                data["category_ids"] = [[i.to(self.device) for i in data["category_ids"]]]
+                data["boxes"] = [[i.to(self.device) for i in data["boxes"]]]
 
-            with torch.no_grad():
-                for b in range(predictions["pred_boxes"].shape[0]):
-                    img_detections = []
-                    # get predictions and labels for this image
-                    pred_boxes = box_cxcywh_to_xyxy(predictions["pred_boxes"][b][0])
-                    pred_scores, pred_cats = predictions["pred_logits"][b][0].softmax(dim=-1).max(dim=-1)
-                    gt_boxes = box_cxcywh_to_xyxy(data["boxes"][b][0])
-                    gt_cats = data["category_ids"][b][0]
-                    # remove background predictions
-                    non_background_idx = pred_cats != 1235
-                    pred_boxes = pred_boxes[non_background_idx]
-                    pred_cats = pred_cats[non_background_idx]
-                    pred_scores = pred_scores[non_background_idx]
-                    # pred_cats -= 1
-                    # perform nms
-                    pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
-                    pred_cats = pred_cats[pruned_idxs]
-                    pred_boxes = pred_boxes[pruned_idxs]
-                    pred_scores = pred_scores[pruned_idxs]
-                    # get sets of categories of predictions and labels
-                    pred_cat_set = set([int(c) for c in pred_cats])
-                    gt_cat_set = set([int(c) for c in gt_cats])
-                    pred_only_cat_set = set(THOR_CLASS_IDS).intersection(pred_cat_set - gt_cat_set)
-                    # add each prediction to the list of detections
-                    for cat in gt_cat_set:
-                        if torch.any(pred_cats == cat):
-                            cat_pred_boxes = pred_boxes[pred_cats == cat]
-                            cat_pred_scores = pred_scores[pred_cats == cat]
-                            cat_gt_boxes = gt_boxes[gt_cats == cat]
-                            cat_ious = torchvision.ops.box_iou(cat_pred_boxes, cat_gt_boxes)
-                            cat_best_ious, cat_best_match_idx = match_predictions_to_detections(cat_ious)
-                            for i in range(cat_ious.shape[0]):
-                                if torch.any(cat_best_match_idx == i):
-                                    img_detections.append({
-                                        "iou": cat_ious[i].max().item(),
-                                        "category_match": True,
-                                        "type": "tp",
-                                        "pred_cat": cat,
-                                        "pred_score": cat_pred_scores[i].item(),
-                                        "box": [coord.item() for coord in cat_pred_boxes[i]],
-                                        "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
-                                                 (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
-                                        "img": data["initial_image_path"][b]
-                                    })
-                                else:
-                                    img_detections.append({
-                                        "iou": cat_ious[i].max().item(),
-                                        "category_match": True,
-                                        "type": "fp",
-                                        "pred_cat": cat,
-                                        "pred_score": cat_pred_scores[i].item(),
-                                        "box": [coord.item() for coord in cat_pred_boxes[i]],
-                                        "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
-                                                 (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
-                                        "img": data["initial_image_path"][b]
-                                    })
-                            for j in range(cat_ious.shape[1]):
-                                if cat_best_ious[j] == 0.0:
+                # forward the model
+                predictions, losses = model(data)
+
+                with torch.no_grad():
+                    for b in range(predictions["pred_boxes"].shape[0]):
+                        img_detections = []
+                        # get predictions and labels for this image
+                        pred_boxes = box_cxcywh_to_xyxy(predictions["pred_boxes"][b][0])
+                        pred_scores, pred_cats = predictions["pred_logits"][b][0].softmax(dim=-1).max(dim=-1)
+                        gt_boxes = box_cxcywh_to_xyxy(data["boxes"][b][0])
+                        gt_cats = data["category_ids"][b][0]
+                        # remove background predictions
+                        non_background_idx = pred_cats != 1235
+                        pred_boxes = pred_boxes[non_background_idx]
+                        pred_cats = pred_cats[non_background_idx]
+                        pred_scores = pred_scores[non_background_idx]
+                        # pred_cats -= 1
+                        # perform nms
+                        pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
+                        pred_cats = pred_cats[pruned_idxs]
+                        pred_boxes = pred_boxes[pruned_idxs]
+                        pred_scores = pred_scores[pruned_idxs]
+                        # get sets of categories of predictions and labels
+                        pred_cat_set = set([int(c) for c in pred_cats])
+                        gt_cat_set = set([int(c) for c in gt_cats])
+                        pred_only_cat_set = set(THOR_CLASS_IDS).intersection(pred_cat_set - gt_cat_set)
+                        # add each prediction to the list of detections
+                        for cat in gt_cat_set:
+                            if torch.any(pred_cats == cat):
+                                cat_pred_boxes = pred_boxes[pred_cats == cat]
+                                cat_pred_scores = pred_scores[pred_cats == cat]
+                                cat_gt_boxes = gt_boxes[gt_cats == cat]
+                                cat_ious = torchvision.ops.box_iou(cat_pred_boxes, cat_gt_boxes)
+                                cat_best_ious, cat_best_match_idx = match_predictions_to_detections(cat_ious)
+                                for i in range(cat_ious.shape[0]):
+                                    if torch.any(cat_best_match_idx == i):
+                                        img_detections.append({
+                                            "iou": cat_ious[i].max().item(),
+                                            "category_match": True,
+                                            "type": "tp",
+                                            "pred_cat": cat,
+                                            "pred_score": cat_pred_scores[i].item(),
+                                            "box": [coord.item() for coord in cat_pred_boxes[i]],
+                                            "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
+                                                     (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
+                                            "img": data["initial_image_path"][b]
+                                        })
+                                    else:
+                                        img_detections.append({
+                                            "iou": cat_ious[i].max().item(),
+                                            "category_match": True,
+                                            "type": "fp",
+                                            "pred_cat": cat,
+                                            "pred_score": cat_pred_scores[i].item(),
+                                            "box": [coord.item() for coord in cat_pred_boxes[i]],
+                                            "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
+                                                     (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
+                                            "img": data["initial_image_path"][b]
+                                        })
+                                for j in range(cat_ious.shape[1]):
+                                    if cat_best_ious[j] == 0.0:
+                                        img_detections.append({
+                                            "iou": 0.0,
+                                            "category_match": False,
+                                            "type": "fn",
+                                            "pred_cat": cat,
+                                            "pred_score": 0.0,
+                                            "box": [coord.item() for coord in cat_gt_boxes[j]],
+                                            "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
+                                                     (cat_gt_boxes[j][3] - cat_gt_boxes[j][1])).item(),
+                                            "img": data["initial_image_path"][b]
+                                        })
+                            else:
+                                cat_gt_boxes = gt_boxes[gt_cats == cat]
+                                for j in range(cat_gt_boxes.shape[0]):
                                     img_detections.append({
                                         "iou": 0.0,
                                         "category_match": False,
@@ -147,70 +163,56 @@ class EveryPathEvaluator:
                                         "pred_score": 0.0,
                                         "box": [coord.item() for coord in cat_gt_boxes[j]],
                                         "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
-                                                 (cat_gt_boxes[j][3] - cat_gt_boxes[j][1])).item(),
+                                                     (cat_gt_boxes[j][3] - cat_gt_boxes[j][1])).item(),
                                         "img": data["initial_image_path"][b]
                                     })
-                        else:
-                            cat_gt_boxes = gt_boxes[gt_cats == cat]
-                            for j in range(cat_gt_boxes.shape[0]):
+                        for cat in pred_only_cat_set:
+                            cat_pred_boxes = pred_boxes[pred_cats == cat]
+                            cat_pred_scores = pred_scores[pred_cats == cat]
+                            for i in range(cat_pred_scores.shape[0]):
                                 img_detections.append({
                                     "iou": 0.0,
                                     "category_match": False,
-                                    "type": "fn",
+                                    "type": "fp",
                                     "pred_cat": cat,
-                                    "pred_score": 0.0,
-                                    "box": [coord.item() for coord in cat_gt_boxes[j]],
-                                    "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
-                                                 (cat_gt_boxes[j][3] - cat_gt_boxes[j][1])).item(),
-                                    "img": data["initial_image_path"][b]
+                                    "pred_score": cat_pred_scores[i].item(),
+                                    "box": [coord.item() for coord in cat_pred_boxes[i]],
+                                    "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
+                                                     (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
+                                    "img": data["initial_image_path"][b],
                                 })
-                    for cat in pred_only_cat_set:
-                        cat_pred_boxes = pred_boxes[pred_cats == cat]
-                        cat_pred_scores = pred_scores[pred_cats == cat]
-                        for i in range(cat_pred_scores.shape[0]):
-                            img_detections.append({
-                                "iou": 0.0,
-                                "category_match": False,
-                                "type": "fp",
-                                "pred_cat": cat,
-                                "pred_score": cat_pred_scores[i].item(),
-                                "box": [coord.item() for coord in cat_pred_boxes[i]],
-                                "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
-                                                 (cat_pred_boxes[i][3] - cat_pred_boxes[i][1])).item(),
-                                "img": data["initial_image_path"][b],
-                            })
 
-                    ap50, ap, tp, fp, fn = self.compute_ap(img_detections)
-                    all_aps[ac].append(ap)
-                    all_aps50[ac].append(ap50)
-                    detections = detections + img_detections
+                        ap50, ap, tp, fp, fn = self.compute_ap(img_detections)
+                        all_aps[ac].append(float(ap))
+                        all_aps50[ac].append(float(ap50))
+                        detections = detections + img_detections
 
-                    # if save_results:
-                    #     img = inv_transform(data["frames"][b][0].detach().cpu()).resize((1200, 1200))
-                    #     # font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-C.ttf", 20)
-                    #     font = ImageFont.load_default()
-                    #     draw = ImageDraw.Draw(img)
-                    #     for det in img_detections:
-                    #         color = None
-                    #         if det["type"] == "tp":
-                    #             # color = "blue"
-                    #             if det["iou"] >= 0.5:
-                    #                 color = "blue"
-                    #             else:
-                    #                 color = "black"
-                    #         if det["type"] == "fn":
-                    #             continue
-                    #         if det["type"] == "fp": # and det["pred_score"] > 0.5:
-                    #             continue
-                    #         if color is not None:
-                    #             draw.rectangle([1200 * c for c in det["box"]], outline=color, width=2)
-                    #             text = tlvis_classes[det["pred_cat"]]
-                    #             x, y = 1200 * det["box"][0], 1200 * (det["box"][1] - 0.02)
-                    #             w, h = font.getsize(text)
-                    #             draw.rectangle((x, y, x + w, y + h), fill=color)
-                    #             draw.text((x, y), text, fill="white", font=font)
-                    #     img_root = self.out_dir + "images/"
-                    #     img.save(img_root + img_detections[0]["img"].split("/")[-1])
+                        # if save_results:
+                        #     img = inv_transform(data["frames"][b][0].detach().cpu()).resize((1200, 1200))
+                        #     # font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-C.ttf", 20)
+                        #     font = ImageFont.load_default()
+                        #     draw = ImageDraw.Draw(img)
+                        #     for det in img_detections:
+                        #         color = None
+                        #         if det["type"] == "tp":
+                        #             # color = "blue"
+                        #             if det["iou"] >= 0.5:
+                        #                 color = "blue"
+                        #             else:
+                        #                 color = "black"
+                        #         if det["type"] == "fn":
+                        #             continue
+                        #         if det["type"] == "fp": # and det["pred_score"] > 0.5:
+                        #             continue
+                        #         if color is not None:
+                        #             draw.rectangle([1200 * c for c in det["box"]], outline=color, width=2)
+                        #             text = tlvis_classes[det["pred_cat"]]
+                        #             x, y = 1200 * det["box"][0], 1200 * (det["box"][1] - 0.02)
+                        #             w, h = font.getsize(text)
+                        #             draw.rectangle((x, y, x + w, y + h), fill=color)
+                        #             draw.text((x, y), text, fill="white", font=font)
+                        #     img_root = self.out_dir + "images/"
+                        #     img.save(img_root + img_detections[0]["img"].split("/")[-1])
 
         # tps = [x for x in detections if x["type"] == "tp"]
         # fps = [x for x in detections if x["type"] == "fp"]
