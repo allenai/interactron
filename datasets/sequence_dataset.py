@@ -33,7 +33,7 @@ class SequenceDataset(Dataset):
     def __len__(self):
         return len(self.annotations["data"])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, actions=None):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
@@ -41,13 +41,15 @@ class SequenceDataset(Dataset):
 
         # seed the random generator
         if self.mode == "test":
-            random.seed(0)
+            random.seed(idx)
         else:
             random.seed(time.time())
 
         state_name = scene["root"]
         state = scene["state_table"][state_name]
-        actions = [random.choice(self.annotations["metadata"]["actions"]) for _ in range(5)]
+        if actions is None:
+            actions = [random.choice(self.annotations["metadata"]["actions"]) for _ in range(5)]
+            print(idx, actions)
         frames = []
         masks = []
         object_ids = []

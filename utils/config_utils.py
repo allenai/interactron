@@ -99,13 +99,17 @@ def build_trainer(model, args, evaluator=None):
 
 
 def build_evaluator(model, args, load_checkpoint=False):
-    arg_check(args.EVALUATOR.TYPE, ["random_policy_evaluator", "interactive_evaluator"], "evaluator")
+    arg_check(args.EVALUATOR.TYPE, ["random_policy_evaluator", "interactive_evaluator", "every_path_evaluator"],
+              "evaluator")
     if args.EVALUATOR.TYPE == "random_policy_evaluator":
         from engine.random_policy_evaluator import RandomPolicyEvaluator
         evaluator = RandomPolicyEvaluator(model, args, load_checkpoint=load_checkpoint)
     elif args.EVALUATOR.TYPE == "interactive_evaluator":
         from engine.interactive_evaluator import InteractiveEvaluator
         evaluator = InteractiveEvaluator(model, args, load_checkpoint=load_checkpoint)
+    elif args.EVALUATOR.TYPE == "every_path_evaluator":
+        from engine.every_path_evaluator import EveryPathEvaluator
+        evaluator = EveryPathEvaluator(model, args, load_checkpoint=load_checkpoint)
     return evaluator
 
 
