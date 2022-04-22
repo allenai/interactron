@@ -67,7 +67,7 @@ class EveryPathEvaluator:
 
             print(ac)
 
-            data = self.test_dataset.__getitem__(0, actions=ac)
+            data = self.test_dataset.__getitem__(8, actions=ac)
 
             # place data on the correct device
             data["frames"] = torch.stack(data["frames"], dim=0).to(self.device).unsqueeze(0)
