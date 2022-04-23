@@ -133,8 +133,7 @@ class interactron_random(nn.Module):
             # get detector grads
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
             set_parameters(self.detector, fast_weights)
-            set_parameters(self.detector, theta_task)
-
+            # set_parameters(self.detector, theta_task)
             # theta_task = clone_parameters(theta)
             # set_parameters(self.detector, theta_task)
 
