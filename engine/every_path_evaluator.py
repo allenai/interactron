@@ -64,10 +64,10 @@ class EveryPathEvaluator:
 
         detections = []
         all_action_combos = [i for i in itertools.product(ACTIONS, repeat=4)]
-        all_aps = {ac: [] for ac in all_action_combos}
-        all_aps50 = {ac: [] for ac in all_action_combos}
+        all_aps = {"-".join(ac): [] for ac in all_action_combos}
+        all_aps50 = {"-".join(ac): [] for ac in all_action_combos}
 
-        for i in tqdm(range(len(self.test_dataset))):
+        for i in tqdm(range(len(self.test_dataset)-85)):
             for ac in all_action_combos:
 
                 # print(ac)
@@ -183,8 +183,8 @@ class EveryPathEvaluator:
                                 })
 
                         ap50, ap, tp, fp, fn = self.compute_ap(img_detections)
-                        all_aps[ac].append(float(ap))
-                        all_aps50[ac].append(float(ap50))
+                        all_aps["-".join(ac)].append(float(ap))
+                        all_aps50["-".join(ac)].append(float(ap50))
                         detections = detections + img_detections
 
                         # if save_results:
