@@ -41,7 +41,8 @@ class SequenceDataset(Dataset):
 
         # seed the random generator
         if self.mode == "test":
-            random.seed(idx)
+            random.seed('Q9Y8GfsdUtwCOIcZ')
+            # random.seed(0)
         else:
             random.seed(time.time())
 
