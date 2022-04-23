@@ -41,8 +41,8 @@ class SequenceDataset(Dataset):
 
         # seed the random generator
         if self.mode == "test":
-            random.seed('Q9Y8GfsdUtwCOIcZ')
-            # random.seed(0)
+            # random.seed('Q9Y8GfsdUtwCOIcZ')
+            random.seed(0)
         else:
             random.seed(time.time())
 
@@ -90,12 +90,18 @@ class SequenceDataset(Dataset):
             object_ids.append(img_object_ids)
             category_ids.append(targets["labels"] if targets is not None else torch.zeros(0).long())
             if i < 4:
-                if self.mode == "test":
-                    state_name = state["actions"][actions[i]]
-                else:
-                    state_name = random.choice(list(scene["state_table"]))
+                # if self.mode == "test":
+                #     state_name = state["actions"][actions[i]]
+                # else:
+                #     state_name = random.choice(list(scene["state_table"]))
                 state_name = state["actions"][actions[i]]
                 state = scene["state_table"][state_name]
+
+        # import matplotlib.pyplot as plt
+        # for i, frame in enumerate(frames):
+        #     plt.subplot(1, 5, i+1)
+        #     plt.imshow(frame.detach().cpu().permute(1, 2, 0).numpy())
+        # plt.show()
 
         sample = {
             'frames': frames,

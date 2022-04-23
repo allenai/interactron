@@ -81,6 +81,36 @@ class interactron_random(nn.Module):
         self.logger = None
         self.mode = 'train'
 
+    def predict(self, data):
+
+        # reformat img and mask data
+        b, s, c, w, h = data["frames"].shape
+        img = data["frames"].view(s, c, w, h)
+        mask = data["masks"].view(s, w, h)
+
+        theta = get_parameters(self.detector)
+        theta_task = detach_parameters(clone_parameters(theta))
+
+        # get supervisor grads
+        set_parameters(self.detector, theta_task)
+        pre_adaptive_out = self.detector(NestedTensor(img, mask))
+        pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
+        pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
+        pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
+        pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
+
+        fusion_out = self.fusion(pre_adaptive_out)
+        learned_loss = torch.norm(fusion_out["loss"])
+        detector_grad = torch.autograd.grad(learned_loss, theta_task, create_graph=True, retain_graph=True,
+                                            allow_unused=True)
+        fast_weights = sgd_step(theta_task, detector_grad, 1e-1)
+        set_parameters(self.detector, fast_weights)
+        post_adaptive_out = self.detector(NestedTensor(img[0:1], mask[0:1]))
+
+        set_parameters(self.detector, theta)
+
+        return {k: v.unsqueeze(0) for k, v in post_adaptive_out.items()}
+
     def forward(self, data, train=True):
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
@@ -173,7 +203,7 @@ class interactron_random(nn.Module):
         # only train proposal generator of detector
         self.detector.train(mode)
         self.fusion.train(mode)
-        self.decoder.train(mode)
+        # self.decoder.train(mode)
         return self
 
     def get_optimizer_groups(self, train_config):

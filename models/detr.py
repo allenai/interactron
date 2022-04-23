@@ -17,6 +17,28 @@ class detr(nn.Module):
         self.logger = None
         self.mode = 'train'
 
+    def predict(self, data):
+        # reformat img and mask data
+        b, s, c, w, h = data["frames"].shape
+        img = data["frames"].view(b*s, c, w, h)
+        mask = data["masks"].view(b*s, w, h)
+        # reformat labels
+        labels = []
+        for i in range(b):
+            for j in range(s):
+                labels.append({
+                    "labels": data["category_ids"][i][j],
+                    "boxes": data["boxes"][i][j]
+                })
+        # get predictions and losses
+        out = self.model(NestedTensor(img, mask))
+        # loss = self.criterion(out, labels)
+        # clean up predictions
+        for key, val in out.items():
+            out[key] = val.view(b, s, *val.shape[1:])
+
+        return out
+
     def forward(self, data):
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape

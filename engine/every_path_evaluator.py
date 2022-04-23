@@ -67,12 +67,15 @@ class EveryPathEvaluator:
         all_aps = {"-".join(ac): [] for ac in all_action_combos}
         all_aps50 = {"-".join(ac): [] for ac in all_action_combos}
 
-        for i in tqdm(range(len(self.test_dataset))):
+        model.eval()
+
+        for index in tqdm(range(len(self.test_dataset))):
             for ac in all_action_combos:
 
                 # print(ac)
-
-                data = self.test_dataset.__getitem__(i, actions=ac)
+                # ac = ["MoveAhead", "MoveAhead", "MoveAhead", "MoveAhead"]
+                # ac = ["RotateLeft", "RotateRight", "RotateRight", "RotateLeft"]
+                data = self.test_dataset.__getitem__(index, actions=ac)
 
                 # place data on the correct device
                 data["frames"] = torch.stack(data["frames"], dim=0).to(self.device).unsqueeze(0)
@@ -81,7 +84,8 @@ class EveryPathEvaluator:
                 data["boxes"] = [[i.to(self.device) for i in data["boxes"]]]
 
                 # forward the model
-                predictions, losses = model(data)
+                # predictions, losses = model(data)
+                predictions = model.predict(data)
 
                 with torch.no_grad():
                     for b in range(predictions["pred_boxes"].shape[0]):
@@ -185,7 +189,7 @@ class EveryPathEvaluator:
                         ap50, ap, tp, fp, fn = self.compute_ap(img_detections)
                         all_aps["-".join(ac)].append(float(ap))
                         all_aps50["-".join(ac)].append(float(ap50))
-                        detections = detections + img_detections
+                        # detections = detections + img_detections
 
                         # if save_results:
                         #     img = inv_transform(data["frames"][b][0].detach().cpu()).resize((1200, 1200))
@@ -261,7 +265,7 @@ class EveryPathEvaluator:
         # with open(self.out_dir + "results.json", 'w') as f:
         #     json.dump(results, f)
 
-        with open("all_aps.json", 'w') as f:
+        with open("detr_aps.json", 'w') as f:
             json.dump({"ap": all_aps, "ap50": all_aps50}, f)
 
     def compute_ap(self, detections):
@@ -292,7 +296,7 @@ class EveryPathEvaluator:
         #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
         #     aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
 
-        # print("AP_50:", ap_50)
+        print("AP_50:", ap_50, "ap:", np.mean(aps))
         return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
 
     @staticmethod
