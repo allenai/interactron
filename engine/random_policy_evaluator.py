@@ -56,7 +56,7 @@ class RandomPolicyEvaluator:
             os.makedirs(self.out_dir + "images/", exist_ok=True)
 
         model, config = self.model, self.config.EVALUATOR
-        # model.train(False)
+        model.eval()
         loader = DataLoader(self.test_dataset, shuffle=False, pin_memory=True,
                             batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS,
                             collate_fn=collate_fn)
@@ -71,7 +71,7 @@ class RandomPolicyEvaluator:
             data["boxes"] = [[j.to(self.device) for j in i] for i in data["boxes"]]
 
             # forward the model
-            predictions, losses = model(data)
+            predictions = model.predict(data)
 
             with torch.no_grad():
                 for b in range(predictions["pred_boxes"].shape[0]):

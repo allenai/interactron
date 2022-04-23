@@ -46,8 +46,8 @@ TRAINER:
   FINAL_TOKENS: 0 # 2.5e7
   OUTPUT_DIRECTORY: "training_results/interactron_random"
 EVALUATOR:
-  TYPE: "every_path_evaluator"
-  # TYPE: "random_policy_evaluator"
+  # TYPE: "every_path_evaluator"
+  TYPE: "random_policy_evaluator"
   BATCH_SIZE: 1
   NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/interactron_random"

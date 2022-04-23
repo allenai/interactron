@@ -36,9 +36,9 @@ TRAINER:
   FINAL_TOKENS: 1e8
   OUTPUT_DIRECTORY: "training_results/single_frame_baseline"
 EVALUATOR:
-  # TYPE: "random_policy_evaluator"
-  TYPE: "every_path_evaluator"
-  BATCH_SIZE: 2
-  NUM_WORKERS: 2
+  TYPE: "random_policy_evaluator"
+  # TYPE: "every_path_evaluator"
+  BATCH_SIZE: 1
+  NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/single_frame_baseline"
   CHECKPOINT: "pretrained_weights/detr-dc5.pth"
