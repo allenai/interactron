@@ -67,7 +67,7 @@ class EveryPathEvaluator:
         all_aps = {"-".join(ac): [] for ac in all_action_combos}
         all_aps50 = {"-".join(ac): [] for ac in all_action_combos}
 
-        for i in tqdm(range(len(self.test_dataset))):
+        for i in tqdm(range(len(self.test_dataset)-90)):
             for ac in all_action_combos:
 
                 # print(ac)
