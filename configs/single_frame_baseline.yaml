@@ -21,10 +21,10 @@ DATASET:
     IMAGE_ROOT: "data/interactron/val"
 TRAINER:
   TYPE: "direct_supervision"
-  BATCH_SIZE: 2
-  NUM_WORKERS: 2
+  BATCH_SIZE: 8
+  NUM_WORKERS: 8
   MAX_EPOCHS: 500
-  LEARNING_RATE: 3e-4
+  LEARNING_RATE: 1e-5
   BETA1: 0.9
   BETA2: 0.95
   MOMENTUM: 0.9
