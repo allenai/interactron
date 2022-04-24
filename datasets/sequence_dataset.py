@@ -41,7 +41,8 @@ class SequenceDataset(Dataset):
 
         # seed the random generator
         if self.mode == "test":
-            random.seed('Ra6EGTUs1k8YLEAL')
+            # random.seed('5FCPpICv2x9l15Wj')
+            random.seed('TR4amgkcClzUNoL4')
             # random.seed(0)
         else:
             random.seed(time.time())
@@ -97,6 +98,7 @@ class SequenceDataset(Dataset):
                 state_name = state["actions"][actions[i]]
                 state = scene["state_table"][state_name]
 
+        # print(actions)
         # import matplotlib.pyplot as plt
         # for i, frame in enumerate(frames):
         #     plt.subplot(1, 5, i+1)

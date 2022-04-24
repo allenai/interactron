@@ -59,7 +59,7 @@ class detr(nn.Module):
         for key, val in out.items():
             out[key] = val.view(b, s, *val.shape[1:])
 
-        return out, loss
+        return out, {k.replace("loss", "loss_detector"): v for k, v in loss.items()}
 
     def eval(self):
         return self.train(False)
