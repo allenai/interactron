@@ -265,7 +265,7 @@ class EveryPathEvaluator:
         # with open(self.out_dir + "results.json", 'w') as f:
         #     json.dump(results, f)
 
-        with open("detr_aps.json", 'w') as f:
+        with open("new_data_aps.json", 'w') as f:
             json.dump({"ap": all_aps, "ap50": all_aps50}, f)
 
     def compute_ap(self, detections):
