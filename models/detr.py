@@ -54,12 +54,14 @@ class detr(nn.Module):
                 })
         # get predictions and losses
         out = self.model(NestedTensor(img, mask))
-        loss = self.criterion(out, labels)
+        losses = self.criterion(out, labels)
+        loss = losses["loss_ce"] + 5 * losses["loss_bbox"] + 2 * losses["loss_giou"]
+        loss.backward()
         # clean up predictions
         for key, val in out.items():
             out[key] = val.view(b, s, *val.shape[1:])
 
-        return out, {k.replace("loss", "loss_detector"): v for k, v in loss.items()}
+        return out, {k.replace("loss", "loss_detector"): v for k, v in losses.items()}
 
     def eval(self):
         return self.train(False)
