@@ -167,9 +167,9 @@ class interactron_random(nn.Module):
             # theta_task = clone_parameters(theta)
             # set_parameters(self.detector, theta_task)
 
-            import random
-            ridx = random.randint(0, 4)
-            # ridx = 0
+            # import random
+            # ridx = random.randint(0, 4)
+            ridx = 0
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
@@ -177,8 +177,8 @@ class interactron_random(nn.Module):
             detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
             detector_loss.backward()
 
-            with torch.no_grad():
-                post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
+            # with torch.no_grad():
+            #     post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
