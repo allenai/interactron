@@ -103,7 +103,7 @@ class interactron_random(nn.Module):
         learned_loss = torch.norm(fusion_out["loss"])
         detector_grad = torch.autograd.grad(learned_loss, theta_task, create_graph=True, retain_graph=True,
                                             allow_unused=True)
-        fast_weights = sgd_step(theta_task, detector_grad, 1e-3)
+        fast_weights = sgd_step(theta_task, detector_grad, 1e-1)
         set_parameters(self.detector, fast_weights)
         post_adaptive_out = self.detector(NestedTensor(img[0:1], mask[0:1]))
 
@@ -150,7 +150,7 @@ class interactron_random(nn.Module):
             learned_loss = torch.norm(fusion_out["loss"])
             detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
                                                 allow_unused=True)
-            fast_weights = sgd_step(detached_theta_task, detector_grad, 1e-3)
+            fast_weights = sgd_step(detached_theta_task, detector_grad, 1e-1)
             set_parameters(self.detector, fast_weights)
 
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
@@ -161,7 +161,7 @@ class interactron_random(nn.Module):
             supervisor_loss.backward()
 
             # get detector grads
-            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-3)
+            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), 1e-1)
             set_parameters(self.detector, fast_weights)
             # set_parameters(self.detector, theta_task)
             # theta_task = clone_parameters(theta)
