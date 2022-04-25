@@ -12,40 +12,6 @@ from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_par
 
 LR = 1e-1
 
-# class Decoder(nn.Module):
-#
-#     def __init__(self, config, out_dim=4):
-#         super().__init__()
-#         parameter_list = [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, config.OUTPUT_SIZE), a=math.sqrt(5)))]
-#         parameter_list += [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, 512), a=math.sqrt(5))) for _ in range(3)]
-#         parameter_list.append(nn.Parameter(nn.init.kaiming_uniform_(torch.empty(out_dim, 512), a=math.sqrt(5))))
-#         self.weights = nn.ParameterList(parameter_list)
-#
-#     def forward(self, x, grads=None, lr=1e-3):
-#         for i in range(len(self.weights) - 1):
-#             if grads is None:
-#                 x = F.relu(F.linear(x, self.weights[i]))
-#             else:
-#                 x = F.relu(F.linear(x, self.weights[i] - lr * grads[i]))
-#         if grads is None:
-#             x = F.linear(x, self.weights[-1])
-#         else:
-#             x = F.linear(x, self.weights[-1] - lr * grads[-1])
-#         return x
-#
-#     def set_grad(self, grads):
-#         for i in range(len(self.weights)):
-#             grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
-#             self.weights[i].grad = grad
-#
-#
-# def set_grad(model, grads):
-#     for i, p in enumerate(model.parameters()):
-#         if grads[0][i] is None:
-#             continue
-#         grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
-#         p.grad = grad
-
 
 class interactron_random(nn.Module):
 
@@ -59,26 +25,6 @@ class interactron_random(nn.Module):
         self.detector.load_state_dict(torch.load(config.WEIGHTS, map_location=torch.device('cpu'))['model'])
         # build fusion transformer
         self.fusion = Transformer(config)
-        # self.decoder = Decoder(config, out_dim=config.NUM_CLASSES+1)
-        # self.decoder = Learner([
-        #     ('linear', [512, config.OUTPUT_SIZE]),
-        #     ('relu', [True]),
-        #     # ('ln', [True]),
-        #     ('bn', [5]),
-        #     ('linear', [512, 512]),
-        #     ('relu', [True]),
-        #     # ('ln', [True]),
-        #     ('bn', [5]),
-        #     ('linear', [512, 512]),
-        #     ('relu', [True]),
-        #     # ('ln', [True]),
-        #     ('bn', [5]),
-        #     ('linear', [512, 512]),
-        #     ('relu', [True]),
-        #     # ('ln', [True]),
-        #     ('bn', [5]),
-        #     ('linear', [config.NUM_CLASSES+1, 512])
-        # ])
         self.logger = None
         self.mode = 'train'
 
@@ -154,8 +100,8 @@ class interactron_random(nn.Module):
             fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
             set_parameters(self.detector, fast_weights)
 
-            post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
-            supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
+            post_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
+            supervisor_loss = self.criterion(post_adaptive_out, labels[task][1:], background_c=0.1)
             supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
             supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
                               2 * supervisor_loss["loss_bbox"]
@@ -164,9 +110,6 @@ class interactron_random(nn.Module):
             # get detector grads
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), LR)
             set_parameters(self.detector, fast_weights)
-            # set_parameters(self.detector, theta_task)
-            # theta_task = clone_parameters(theta)
-            # set_parameters(self.detector, theta_task)
 
             # import random
             # ridx = random.randint(0, 4)
@@ -174,7 +117,6 @@ class interactron_random(nn.Module):
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
-            # supervisor_losses.append({k: v.detach() for k, v in detector_loss.items()})
             detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
             detector_loss.backward()
 
