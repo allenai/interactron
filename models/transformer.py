@@ -34,8 +34,8 @@ class Transformer(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.img_feature_embedding = nn.Linear(config.IMG_FEATURE_SIZE, config.EMBEDDING_DIM)
-        # self.prediction_embedding = nn.Linear(config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
+        # self.img_feature_embedding = nn.Linear(config.IMG_FEATURE_SIZE, config.EMBEDDING_DIM)
+        self.prediction_embedding = nn.Linear(config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
         # self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE + config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
         self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE, config.EMBEDDING_DIM)
         self.model = GPT(config)
@@ -50,15 +50,15 @@ class Transformer(nn.Module):
 
     def forward(self, x):
         # fold data into sequence
-        # img_feature_embedding = self.img_feature_embedding(x["embedded_memory_features"].permute(0, 1, 3, 4, 2))
-        # preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"]), dim=-1)
-        preds = x["box_features"]
+        img_feature_embedding = self.img_feature_embedding(x["embedded_memory_features"].permute(0, 1, 3, 4, 2))
+        preds = torch.cat((x["box_features"], x["pred_logits"], x["pred_boxes"]), dim=-1)
+        # preds = x["box_features"]
         prediction_embeddings = self.prediction_embedding(preds)
         b, s, p, n = prediction_embeddings.shape
         n_preds = prediction_embeddings.shape[1] * prediction_embeddings.shape[2]
-        pad = torch.zeros((b, 255, n), device=prediction_embeddings.device)
+        pad = torch.zeros((b, 2060, n), device=prediction_embeddings.device)
         # pad = torch.zeros((b, 255, n), device=prediction_embeddings.device)
-        seq = torch.cat((# img_feature_embedding.reshape(b, -1, n),
+        seq = torch.cat((img_feature_embedding.reshape(b, -1, n),
                          prediction_embeddings.reshape(b, -1, n),
                          self.action_tokens.repeat(b,1,1).reshape(b, -1, n)), dim=1)
         pad[:, :seq.shape[1]] = seq
