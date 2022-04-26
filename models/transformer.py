@@ -35,8 +35,8 @@ class Transformer(nn.Module):
     def __init__(self, config):
         super().__init__()
         # self.img_feature_embedding = nn.Linear(config.IMG_FEATURE_SIZE, config.EMBEDDING_DIM)
-        self.prediction_embedding = nn.Linear(config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
-        # self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE + config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
+        # self.prediction_embedding = nn.Linear(config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
+        self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE + config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
         self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE, config.EMBEDDING_DIM)
         self.model = GPT(config)
         self.box_decoder = MLP(config.OUTPUT_SIZE, 256, 4, 3)
