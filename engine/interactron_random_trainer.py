@@ -106,8 +106,8 @@ class InteractronRandomTrainer:
                         lr = config.LEARNING_RATE * lr_mult
                         # for param_group in supervisor_optimizer.param_groups:
                         #     param_group['lr'] = lr
-                        for param_group in detector_optimizer.param_groups:
-                            param_group['lr'] = lr
+                        # for param_group in detector_optimizer.param_groups:
+                        #     param_group['lr'] = lr
                     else:
                         lr = config.LEARNING_RATE
 
