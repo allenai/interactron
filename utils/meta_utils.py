@@ -1,4 +1,5 @@
 import collections
+import torch
 
 
 def get_parameters(model):
@@ -131,11 +132,11 @@ def clone_parameters(params):
 #     return flatt_children
 
 
-def sgd_step(params, grads, lr, clip=100.0):
+def sgd_step(params, grads, lr, clip=1.0):
     updated_params = []
     for p, g in zip(params, grads):
         if g is None:
             updated_params.append(p)
         else:
-            updated_params.append(min(p - lr * g, clip))
+            updated_params.append(p - torch.clip(lr * g, min=-clip, max=clip))
     return tuple(updated_params)
