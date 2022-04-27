@@ -60,7 +60,7 @@ class Transformer(nn.Module):
         # pad = torch.zeros((b, 255, n), device=prediction_embeddings.device)
         seq = torch.cat((img_feature_embedding.reshape(b, -1, n),
                          prediction_embeddings.reshape(b, -1, n),
-                         self.action_tokens.repeat(b,1,1).reshape(b, -1, n)), dim=1)
+                         self.action_tokens.repeat(b, 1, 1).reshape(b, -1, n)), dim=1)
         pad[:, :seq.shape[1]] = seq
         y = torch.relu(self.model(pad))
         # unfold data

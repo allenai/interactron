@@ -10,7 +10,7 @@ from models.learner import Learner
 from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters, detach_parameters, \
     detach_gradients
 
-LR = 1e-3
+LR = 10.0
 
 
 class interactron_random(nn.Module):
@@ -97,7 +97,7 @@ class interactron_random(nn.Module):
             learned_loss = torch.norm(fusion_out["loss"])
             detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
                                                 allow_unused=True)
-            fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
+            fast_weights = sgd_step(detached_theta_task, detector_grad, LR, clip=1.0)
             set_parameters(self.detector, fast_weights)
 
             post_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))

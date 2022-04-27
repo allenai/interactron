@@ -41,9 +41,9 @@ class DETR(nn.Module):
         self.backbone = backbone
         self.aux_loss = aux_loss
 
-        self.backbone.requires_grad_(False)
-        self.transformer.encoder.requires_grad_(False)
-        self.input_proj.requires_grad_(False)
+        # self.backbone.requires_grad_(False)
+        # self.transformer.encoder.requires_grad_(False)
+        # self.input_proj.requires_grad_(False)
 
     def forward(self, samples: NestedTensor):
         """ The forward expects a NestedTensor, which consists of:
