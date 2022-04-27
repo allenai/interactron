@@ -132,7 +132,7 @@ def clone_parameters(params):
 #     return flatt_children
 
 
-def sgd_step(params, grads, lr, clip=1.0):
+def sgd_step(params, grads, lr, clip=0.1):
     updated_params = []
     for p, g in zip(params, grads):
         if g is None:
