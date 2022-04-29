@@ -40,7 +40,7 @@ class Transformer(nn.Module):
         # create padded sequences
         memory = torch.zeros((b, 5 * 19 * 19, n), device=prediction_embeddings.device)
         memory[:, :(s * 19 * 19)] = img_feature_embedding.reshape(b, -1, n)
-        tgt = torch.zeros((b, 255, n))
+        tgt = torch.zeros((b, 255, n), device=prediction_embeddings.device)
         tgt[:, :(s * 50)] = prediction_embeddings.reshape(b, -1, n)
         tgt[:, 250:255] = self.action_tokens.repeat(b, 1, 1).reshape(b, -1, n)
         mask = torch.zeros((b, 5 * 19 * 19), dtype=torch.bool, device=x["box_features"].device)
