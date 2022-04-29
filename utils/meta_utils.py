@@ -132,11 +132,11 @@ def clone_parameters(params):
 #     return flatt_children
 
 
-def sgd_step(params, grads, lr, clip=10000.0):
+def sgd_step(params, grads, lr):
     updated_params = []
     for p, g in zip(params, grads):
         if g is None:
             updated_params.append(p)
         else:
-            updated_params.append(p - torch.clip(lr * g, min=-clip, max=clip))
+            updated_params.append(p - lr * g)
     return tuple(updated_params)
