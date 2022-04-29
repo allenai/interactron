@@ -31,8 +31,8 @@ DATASET:
     IMAGE_ROOT: "data/interactron/val"
 TRAINER:
   TYPE: "interactron_random"
-  BATCH_SIZE: 32
-  NUM_WORKERS: 8
+  BATCH_SIZE: 16
+  NUM_WORKERS: 16
   MAX_EPOCHS: 500
   LEARNING_RATE: 1e-4
   BETA1: 0.9
