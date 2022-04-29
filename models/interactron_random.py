@@ -5,7 +5,7 @@ import math
 
 from models.detr_models.detr import build
 from models.detr_models.util.misc import NestedTensor
-from models.transformer import Transformer
+from models.new_transformer import Transformer
 from models.learner import Learner
 from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters, detach_parameters, \
     detach_gradients

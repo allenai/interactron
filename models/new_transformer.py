@@ -20,9 +20,16 @@ class Transformer(nn.Module):
         self.action_tokens = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, 5, config.EMBEDDING_DIM),
                                                                    a=math.sqrt(5)))
         # build transformer
-        decoder_layer = TransformerDecoderLayer(512, 8, 2048, 0.1, "relu", False)
-        decoder_norm = nn.LayerNorm(512)
-        self.transformer = TransformerDecoder(decoder_layer, 6, decoder_norm, return_intermediate=False)
+        decoder_layer = TransformerDecoderLayer(config.EMBEDDING_DIM, config.NUM_HEADS, 2048, 0.1, "relu", False)
+        decoder_norm = nn.LayerNorm(config.EMBEDDING_DIM)
+        self.transformer = TransformerDecoder(decoder_layer, config.NUM_LAYERS, decoder_norm, return_intermediate=False)
+
+        self.embed_dim = config.EMBEDDING_DIM
+        self.img_len = 19 * 19
+
+        self.pos_embed = nn.Parameter(torch.zeros(1, 1805, config.EMBEDDING_DIM), requires_grad=False)
+        self.query_embed = nn.Parameter(torch.zeros(1, 255, config.EMBEDDING_DIM), requires_grad=True)
+        self.init_pos_emb()
 
     def forward(self, x):
         # fold data into sequence
@@ -36,9 +43,10 @@ class Transformer(nn.Module):
         tgt = torch.zeros((b, 255, n))
         tgt[:, :(s * 50)] = prediction_embeddings.reshape(b, -1, n)
         tgt[:, 250:255] = self.action_tokens.repeat(b, 1, 1).reshape(b, -1, n)
-        mask = torch.zeros((b, 5, 19, 19), dtype=torch.bool, device=x["box_features"].device)
+        mask = torch.zeros((b, 5 * 19 * 19), dtype=torch.bool, device=x["box_features"].device)
         # pass sequence through model
-        y = self.transformer(tgt, memory, memory_key_padding_mask=mask, pos=pos_embed, query_pos=query_embed)
+        y = self.transformer(tgt.permute(1, 0, 2), memory.permute(1, 0, 2), memory_key_padding_mask=mask,
+                             pos=self.pos_embed.permute(1, 0, 2), query_pos=self.query_embed.permute(1, 0, 2))
         # unfold data
         y_preds = y[:, :-5].reshape(b, s, p, -1)
         boxes = self.box_decoder(y_preds).sigmoid()
@@ -48,6 +56,21 @@ class Transformer(nn.Module):
 
         return {"seq": y_preds.squeeze(), "pred_boxes": boxes.squeeze(), "pred_logits": logits.squeeze(),
                 "loss": loss, "actions": actions.squeeze()}
+
+    def init_pos_emb(self):
+        img_sin_embed = get_2d_sincos_pos_embed(self.embed_dim // 2, int(self.img_len**.5))
+        img_pos_embed = torch.zeros((1, self.img_len, self.embed_dim))
+        img_pos_embed[:, :, :self.embed_dim // 2] = torch.from_numpy(img_sin_embed).float()
+
+        seq_sin_embed = get_1d_sincos_pos_embed(self.embed_dim // 2, 5)
+        seq_pos_embed = torch.zeros((1, 5, self.embed_dim))
+        seq_pos_embed[:, :, self.embed_dim // 2:] = torch.from_numpy(seq_sin_embed).float()
+
+        pos_emb = torch.zeros((1, 1805, self.embed_dim))
+        for i in range(5):
+            pos_emb[:, self.img_len*i:self.img_len*(i+1)] = img_pos_embed + seq_pos_embed[:, i]
+
+        self.pos_embed.data.copy_(pos_emb)
 
 
 # Positional embeddings
