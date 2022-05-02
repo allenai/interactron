@@ -132,7 +132,7 @@ def clone_parameters(params):
 #     return flatt_children
 
 
-def sgd_step(params, grads, lr, clip=0.1):
+def sgd_step(params, grads, lr, clip=0.01):
     updated_params = []
     max_grad = 0.0
     mean_grads = []
