@@ -132,11 +132,14 @@ def clone_parameters(params):
 #     return flatt_children
 
 
-def sgd_step(params, grads, lr):
+def sgd_step(params, grads, lr, clip=0.01):
     updated_params = []
+    max_grad = 0.0
     for p, g in zip(params, grads):
         if g is None:
             updated_params.append(p)
         else:
             updated_params.append(p - lr * g)
+            max_grad = max(max_grad, torch.abs(lr * g).max())
+    print("Max Grad:", max_grad)
     return tuple(updated_params)
