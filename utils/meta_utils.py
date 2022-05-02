@@ -134,14 +134,9 @@ def clone_parameters(params):
 
 def sgd_step(params, grads, lr, clip=0.01):
     updated_params = []
-    max_grad = 0.0
-    mean_grads = []
     for p, g in zip(params, grads):
         if g is None:
             updated_params.append(p)
         else:
             updated_params.append(p - torch.clip(lr * g, min=-clip, max=clip))
-            max_grad = max(max_grad, torch.abs(lr * g).max())
-            mean_grads.append(torch.abs(lr * g).mean())
-    print("Max Grad:", max_grad, "Mean Grad:", torch.stack(mean_grads).mean())
     return tuple(updated_params)
