@@ -44,10 +44,10 @@ class InteractronRandomTrainer:
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
 
-    def save_checkpoint(self):
+    def save_checkpoint(self, name=None):
         # DataParallel wrappers keep raw model object in .module attribute
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        torch.save({"model": raw_model.state_dict()}, self.checkpoint_path)
+        torch.save({"model": raw_model.state_dict()}, self.checkpoint_path if name is None else name)
 
     def train(self):
         model, config = self.model, self.config.TRAINER
@@ -146,3 +146,4 @@ class InteractronRandomTrainer:
             if self.test_dataset is not None and self.evaluator is not None and mAP > best_ap:
                 best_ap = mAP
                 self.save_checkpoint()
+            self.save_checkpoint(name=self.checkpoint_path.replace(".pt", "detector_{:04d}.pt".format(epoch)))

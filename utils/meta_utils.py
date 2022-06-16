@@ -67,7 +67,7 @@ def detach_gradients(params):
 
 def set_parameters(model, params):
     # get children form model!
-    if not isinstance(params, collections.Iterator):
+    if not isinstance(params, collections.abc.Iterator):
         params = iter(params)
     children = list(model.children())
     flatt_children = []
