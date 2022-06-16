@@ -10,7 +10,7 @@ from models.learner import Learner
 from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters, detach_parameters, \
     detach_gradients
 
-LR = 1e-1
+LR = 1.0
 
 
 class interactron_random(nn.Module):
@@ -100,8 +100,8 @@ class interactron_random(nn.Module):
             fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
             set_parameters(self.detector, fast_weights)
 
-            post_adaptive_out = self.detector(NestedTensor(img[task][1:], mask[task][1:]))
-            supervisor_loss = self.criterion(post_adaptive_out, labels[task][1:], background_c=0.1)
+            post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
             supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
             supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
                               2 * supervisor_loss["loss_bbox"]
@@ -111,9 +111,9 @@ class interactron_random(nn.Module):
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), LR)
             set_parameters(self.detector, fast_weights)
 
-            # import random
-            # ridx = random.randint(0, 4)
-            ridx = 0
+            import random
+            ridx = random.randint(0, 4)
+            # ridx = 0
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})

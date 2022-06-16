@@ -51,5 +51,6 @@ EVALUATOR:
   BATCH_SIZE: 1
   NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/interactron_random"
-  CHECKPOINT: "pretrained_weights/interactron_random_53.pt"
+  # CHECKPOINT: "pretrained_weights/interactron_random_53.pt"
+  CHECKPOINT: "training_results/interactron_random/04-25-2022:20:05:34/detector.pt"
   # CHECKPOINT: "pretrained_weights/interactron-rand.pth"
