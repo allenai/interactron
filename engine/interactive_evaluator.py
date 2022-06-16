@@ -203,11 +203,6 @@ class InteractiveEvaluator:
         fps = [x for x in detections if x["type"] == "fp"]
         fns = [x for x in detections if x["type"] == "fn"]
 
-        if not save_results:
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
-            ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
-            return ap_50, len(tps), len(fps), len(fns)
-
         aps = []
         for thresh in np.arange(0.5, 1.0, 0.05):
             p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
@@ -232,6 +227,9 @@ class InteractiveEvaluator:
         p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
         ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
         print("AP_50:", ap_50)
+
+        if not save_results:
+            return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
 
         plt.plot(r, p)
         plt.title("PR Curve | AP_50=" + str(ap_50))

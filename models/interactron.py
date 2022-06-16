@@ -6,43 +6,12 @@ import math
 from models.detr_models.detr import build
 from models.detr_models.util.misc import NestedTensor
 from models.transformer import Transformer
+from models.learner import Learner
+from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters, detach_parameters, \
+    detach_gradients
 from utils.storage_utils import PathStorage
 
-
-
-class Decoder(nn.Module):
-
-    def __init__(self, config):
-        super().__init__()
-        parameter_list = [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, config.OUTPUT_SIZE), a=math.sqrt(5)))]
-        parameter_list += [nn.Parameter(nn.init.kaiming_uniform_(torch.empty(512, 512), a=math.sqrt(5))) for _ in range(3)]
-        parameter_list.append(nn.Parameter(nn.init.kaiming_uniform_(torch.empty(config.NUM_CLASSES + 1, 512), a=math.sqrt(5))))
-        self.weights = nn.ParameterList(parameter_list)
-
-    def forward(self, x, grads=None, lr=1e-3):
-        for i in range(len(self.weights) - 1):
-            if grads is None:
-                x = F.relu(F.linear(x, self.weights[i]))
-            else:
-                x = F.relu(F.linear(x, self.weights[i] - lr * grads[i]))
-        if grads is None:
-            x = F.linear(x, self.weights[-1])
-        else:
-            x = F.linear(x, self.weights[-1] - lr * grads[-1])
-        return x
-
-    def set_grad(self, grads):
-        for i in range(len(self.weights)):
-            grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
-            self.weights[i].grad = grad
-
-
-def set_grad(model, grads):
-    for i, p in enumerate(model.parameters()):
-        if grads[0][i] is None:
-            continue
-        grad = torch.mean(torch.stack([g[i] for g in grads]), dim=0)
-        p.grad = grad
+LR = 1.0
 
 
 class interactron(nn.Module):
@@ -57,16 +26,45 @@ class interactron(nn.Module):
         self.detector.load_state_dict(torch.load(config.WEIGHTS, map_location=torch.device('cpu'))['model'])
         # build fusion transformer
         self.fusion = Transformer(config)
-        self.decoder = Decoder(config)
         self.logger = None
         self.mode = 'train'
         self.path_storage = {}
 
-    def forward(self, data):
+    def predict(self, data):
+
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
-        img = data["frames"].view(b*s, c, w, h)
-        mask = data["masks"].view(b*s, w, h)
+        img = data["frames"].view(s, c, w, h)
+        mask = data["masks"].view(s, w, h)
+
+        theta = get_parameters(self.detector)
+        theta_task = detach_parameters(clone_parameters(theta))
+
+        # get supervisor grads
+        set_parameters(self.detector, theta_task)
+        pre_adaptive_out = self.detector(NestedTensor(img, mask))
+        pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
+        pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
+        pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
+        pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
+
+        fusion_out = self.fusion(pre_adaptive_out)
+        learned_loss = torch.norm(fusion_out["loss"])
+        detector_grad = torch.autograd.grad(learned_loss, theta_task, create_graph=True, retain_graph=True,
+                                            allow_unused=True)
+        fast_weights = sgd_step(theta_task, detector_grad, LR)
+        set_parameters(self.detector, fast_weights)
+        post_adaptive_out = self.detector(NestedTensor(img[0:1], mask[0:1]))
+
+        set_parameters(self.detector, theta)
+
+        return {k: v.unsqueeze(0) for k, v in post_adaptive_out.items()}
+
+    def forward(self, data, train=True):
+        # reformat img and mask data
+        b, s, c, w, h = data["frames"].shape
+        img = data["frames"].view(b, s, c, w, h)
+        mask = data["masks"].view(b, s, w, h)
         # reformat labels
         labels = []
         for i in range(b):
@@ -76,103 +74,78 @@ class interactron(nn.Module):
                     "labels": data["category_ids"][i][j],
                     "boxes": data["boxes"][i][j]
                 })
-        # get predictions and losses
-        with torch.no_grad():
-            detr_out = self.detector(NestedTensor(img, mask))
-        # unfold images back into batch and sequences
-        for key in detr_out:
-            detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
 
         detector_losses = []
         supervisor_losses = []
         out_logits_list = []
-        detector_grads = []
-        supervisor_grads = []
+        out_boxes_list = []
+
+        theta = get_parameters(self.detector)
 
         for task in range(b):
-            pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task+1])
-            in_seq = {
-                "pred_logits": pre_adaptive_logits,
-                "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach(),
-                "embedded_memory_features": detr_out["embedded_memory_features"][task:task+1].clone().detach(),
-                "box_features": detr_out["box_features"][task:task + 1].clone().detach(),
-            }
-            fusion_out = self.fusion(in_seq)
+
+            theta_task = clone_parameters(theta)
+
+            # get supervisor grads
+            detached_theta_task = detach_parameters(theta_task)
+            set_parameters(self.detector, detached_theta_task)
+            pre_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
+            pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
+            pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
+            pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
+
+            fusion_out = self.fusion(pre_adaptive_out)
             learned_loss = torch.norm(fusion_out["loss"])
-            grad = torch.autograd.grad(
-                learned_loss,
-                self.decoder.parameters(),
-                create_graph=True,
-                retain_graph=True,
-            )
-            post_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach()[task:task + 1], grad)
-            out_seq = {
-                "pred_logits": post_adaptive_logits,
-                "pred_boxes": detr_out["pred_boxes"][task:task+1].clone().detach()
-            }
-
-            full_out_seq = {}
-            for key in out_seq:
-                full_out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[1:]
-            for key in out_seq:
-                out_seq[key] = out_seq[key].view(1 * s, *out_seq[key].shape[2:])[0:1]
-            for key in in_seq:
-                in_seq[key] = in_seq[key].view(1 * s, *in_seq[key].shape[2:])[0:1]
-            task_detr_out = {}
-            for key in detr_out:
-                task_detr_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[0:1]
-            task_detr_full_out = {}
-            for key in detr_out:
-                task_detr_full_out[key] = detr_out[key][task].reshape(1 * s, *detr_out[key].shape[2:])[1:]
-
-
-            detector_loss = self.criterion(out_seq, [labels[task][0]], detector_out=task_detr_out)
-            supervisor_loss = self.criterion(full_out_seq, labels[task][1:], detector_out=task_detr_full_out)
-            gt_loss = self.criterion(in_seq, [labels[task][0]], detector_out=task_detr_out)
-
-            # compute and record path reward
-            gt_grad = torch.autograd.grad(
-                gt_loss["loss_ce"],
-                self.decoder.parameters(),
-                retain_graph=True,
-                allow_unused=True,
-            )
+            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
+                                                allow_unused=True)
+            first_frame_out = {k: v[0, [0]] for k, v in pre_adaptive_out.items()}
+            gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
+            gt_loss = gt_loss["loss_ce"] + 5 * gt_loss["loss_giou"] + 2 * gt_loss["loss_bbox"]
+            gt_grad = torch.autograd.grad(gt_loss, detached_theta_task, create_graph=True, retain_graph=True,
+                                          allow_unused=True)
             iip = data["initial_image_path"][task]
-            rew = torch.mean(torch.stack([torch.norm(grad[i] - gt_grad[i], p=1)
-                                          for i in range(len(grad))], dim=0)).item()
+            rew = torch.mean(torch.stack([torch.norm(detector_grad[i] - gt_grad[i], p=1)
+                                          for i in range(len(detector_grad))], dim=0)).item()
             if iip not in self.path_storage:
                 self.path_storage[iip] = PathStorage()
             self.path_storage[iip].add_path(data["actions"][task][:4], rew)
-            # get path reward
             best_path = torch.tensor(self.path_storage[iip].get_label(data["actions"][task][:4]),
-                                     dtype=torch.long, device=post_adaptive_logits.device)
-            supervisor_loss["loss_path"] = F.cross_entropy(fusion_out["actions"].view(4,4), best_path)
+                                     dtype=torch.long, device=gt_loss.device)
 
-            detector_losses.append(detector_loss)
-            supervisor_losses.append(supervisor_loss)
-            out_logits_list.append(out_seq["pred_logits"])
+            fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
+            set_parameters(self.detector, fast_weights)
 
-            detector_grad = torch.autograd.grad(
-                detector_loss["loss_ce"],
-                self.decoder.parameters(),
-                retain_graph=True,
-                allow_unused=True,
-            )
+            post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
+            supervisor_loss["loss_path"] = F.cross_entropy(fusion_out["actions"].view(4, 4), best_path)
+            supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
+            supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
+                              2 * supervisor_loss["loss_bbox"] + supervisor_loss["loss_path"]
+            supervisor_loss.backward()
 
-            supervisor_grad = torch.autograd.grad(
-                supervisor_loss["loss_ce"] + supervisor_loss["loss_path"],
-                self.fusion.parameters(),
-                retain_graph=True,
-                allow_unused=True
-            )
+            # get detector grads
+            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), LR)
+            set_parameters(self.detector, fast_weights)
 
-            supervisor_grads.append(supervisor_grad)
-            detector_grads.append(detector_grad)
+            import random
+            ridx = random.randint(0, 4)
+            # ridx = 0
+            post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
+            detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
+            detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
+            detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
+            detector_loss.backward()
 
-        set_grad(self.decoder, detector_grads)
-        set_grad(self.fusion, supervisor_grads)
+            # with torch.no_grad():
+            #     post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
-        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": detr_out["pred_boxes"]}
+            out_logits_list.append(post_adaptive_out["pred_logits"])
+            out_boxes_list.append(post_adaptive_out["pred_boxes"])
+
+        set_parameters(self.detector, theta)
+
+        predictions = {"pred_logits": torch.stack(out_logits_list, dim=0), "pred_boxes": torch.stack(out_boxes_list, dim=0)}
         mean_detector_losses = {k.replace("loss", "loss_detector"):
                                     torch.mean(torch.stack([x[k] for x in detector_losses]))
                                 for k, v in detector_losses[0].items()}
@@ -182,6 +155,28 @@ class interactron(nn.Module):
         losses = mean_detector_losses
         losses.update(mean_supervisor_losses)
         return predictions, losses
+
+    def eval(self):
+        return self.train(False)
+
+    def train(self, mode=True):
+        self.mode = 'train' if mode else 'test'
+        # only train proposal generator of detector
+        self.detector.train(mode)
+        self.fusion.train(mode)
+        # self.decoder.train(mode)
+        return self
+
+    def get_optimizer_groups(self, train_config):
+        optim_groups = [
+            {"params": list(self.decoder.parameters()), "weight_decay": 0.0},
+            {"params": list(self.detector.parameters()), "weight_decay": 0.0},
+        ]
+        return optim_groups
+
+    def set_logger(self, logger):
+        assert self.logger is None, "This model already has a logger!"
+        self.logger = logger
 
     def get_next_action(self, data):
         # reformat img and mask data
@@ -197,42 +192,19 @@ class interactron(nn.Module):
                     "labels": data["category_ids"][i][j],
                     "boxes": data["boxes"][i][j]
                 })
-        # get predictions and losses
-        with torch.no_grad():
-            detr_out = self.detector(NestedTensor(img, mask))
-        # unfold images back into batch and sequences
-        for key in detr_out:
-            detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
 
-        pre_adaptive_logits = self.decoder(detr_out["box_features"].clone().detach())
-        in_seq = {
-            "pred_logits": pre_adaptive_logits,
-            "pred_boxes": detr_out["pred_boxes"].clone().detach(),
-            "embedded_memory_features": detr_out["embedded_memory_features"].clone().detach(),
-            "box_features": detr_out["box_features"].clone().detach(),
-        }
-        fusion_out = self.fusion(in_seq)
+        theta = get_parameters(self.detector)
+        theta_task = clone_parameters(theta)
+
+        detached_theta_task = detach_parameters(theta_task)
+        set_parameters(self.detector, detached_theta_task)
+        pre_adaptive_out = self.detector(NestedTensor(img, mask))
+        pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
+        pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
+        pre_adaptive_out["pred_logits"] = pre_adaptive_out["pred_logits"].unsqueeze(0)
+        pre_adaptive_out["pred_boxes"] = pre_adaptive_out["pred_boxes"].unsqueeze(0)
+
+        fusion_out = self.fusion(pre_adaptive_out)
+
         return fusion_out['actions'][0, s-1].argmax(dim=-1).item()
-
-    def eval(self):
-        return self.train(False)
-
-    def train(self, mode=True):
-        self.mode = 'train' if mode else 'test'
-        # only train proposal generator of detector
-        self.detector.train(False)
-        self.fusion.train(mode)
-        self.decoder.train(mode)
-        return self
-
-    def get_optimizer_groups(self, train_config):
-        optim_groups = [
-            {"params": list(self.decoder.parameters()), "weight_decay": 0.0},
-            {"params": list(self.fusion.parameters()), "weight_decay": 0.0},
-        ]
-        return optim_groups
-
-    def set_logger(self, logger):
-        assert self.logger is None, "This model already has a logger!"
-        self.logger = logger
 
