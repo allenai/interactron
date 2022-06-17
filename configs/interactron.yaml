@@ -22,18 +22,18 @@ DATASET:
   TRAIN:
     TYPE: "sequence"
     MODE: "train"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train.json"
-    IMAGE_ROOT: "data/interactron/train"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train-full.json"
+    IMAGE_ROOT: "data/interactron/train-full"
   TEST:
     TYPE: "sequence"
     MODE: "test"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val.json"
-    IMAGE_ROOT: "data/interactron/val"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_test.json"
+    IMAGE_ROOT: "data/interactron/test"
 TRAINER:
   TYPE: "interactron"
-  BATCH_SIZE: 4
-  NUM_WORKERS: 4
-  MAX_EPOCHS: 500
+  BATCH_SIZE: 16
+  NUM_WORKERS: 16
+  MAX_EPOCHS: 2000
   LEARNING_RATE: 1e-4
   BETA1: 0.9
   BETA2: 0.95
