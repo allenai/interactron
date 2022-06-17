@@ -53,7 +53,7 @@ class InteractronTrainer:
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
         detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.Adam(raw_model.fusion.parameters(), lr=1e-4, weight_decay=1e-4)
+        supervisor_optimizer = torch.optim.Adam(raw_model.fusion.parameters(), lr=1e-4)
         model.train()
 
         def run_epoch(split):
@@ -104,10 +104,10 @@ class InteractronTrainer:
                                        float(max(1, config.FINAL_TOKENS - config.WARMUP_TOKENS))
                             lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
                         lr = config.LEARNING_RATE * lr_mult
-                        for param_group in supervisor_optimizer.param_groups:
-                            param_group['lr'] = lr
-                        for param_group in detector_optimizer.param_groups:
-                            param_group['lr'] = lr
+                        # for param_group in supervisor_optimizer.param_groups:
+                        #     param_group['lr'] = lr
+                        # for param_group in detector_optimizer.param_groups:
+                        #     param_group['lr'] = lr
                     else:
                         lr = config.LEARNING_RATE
 
