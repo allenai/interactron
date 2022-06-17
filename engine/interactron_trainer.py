@@ -138,9 +138,12 @@ class InteractronTrainer:
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
                 mAP = run_evaluation()
+            detector_optimizer.zero_grad()
+            supervisor_optimizer.zero_grad()
             self.logger.log_values()
 
             # supports early stopping based on the test loss, or just save always if no test set is provided
             if self.test_dataset is not None and self.evaluator is not None and mAP > best_ap:
                 best_ap = mAP
                 self.save_checkpoint()
+            self.save_checkpoint(name=self.checkpoint_path.replace(".pt", "detector_{:04d}.pt".format(epoch)))
