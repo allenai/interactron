@@ -193,11 +193,6 @@ class interactron(nn.Module):
                     "boxes": data["boxes"][i][j]
                 })
 
-        theta = get_parameters(self.detector)
-        theta_task = clone_parameters(theta)
-
-        detached_theta_task = detach_parameters(theta_task)
-        set_parameters(self.detector, detached_theta_task)
         pre_adaptive_out = self.detector(NestedTensor(img, mask))
         pre_adaptive_out["embedded_memory_features"] = pre_adaptive_out["embedded_memory_features"].unsqueeze(0)
         pre_adaptive_out["box_features"] = pre_adaptive_out["box_features"].unsqueeze(0)
@@ -206,5 +201,6 @@ class interactron(nn.Module):
 
         fusion_out = self.fusion(pre_adaptive_out)
 
+        print("Action shape", fusion_out['actions'].shape)
         return fusion_out['actions'][0, s-1].argmax(dim=-1).item()
 
