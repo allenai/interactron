@@ -61,7 +61,6 @@ class InteractiveEvaluator:
 
             for i in range(4):
                 action = model.get_next_action(data)
-                print(action)
                 data = loader.step(action)
                 # place data on the correct device
                 data["frames"] = data["frames"].to(self.device)

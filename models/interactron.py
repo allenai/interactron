@@ -201,6 +201,5 @@ class interactron(nn.Module):
 
         fusion_out = self.fusion(pre_adaptive_out)
 
-        print("Action shape", fusion_out['actions'].shape)
         return fusion_out['actions'][0, s-1].argmax(dim=-1).item()
 
