@@ -44,10 +44,10 @@ class InteractronTrainer:
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
 
-    def save_checkpoint(self):
+    def save_checkpoint(self, name=None):
         # DataParallel wrappers keep raw model object in .module attribute
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        torch.save({"model": raw_model.state_dict()}, self.checkpoint_path)
+        torch.save({"model": raw_model.state_dict()}, self.checkpoint_path if name is None else name)
 
     def train(self):
         model, config = self.model, self.config.TRAINER
