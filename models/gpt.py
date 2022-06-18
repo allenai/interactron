@@ -1,39 +1,13 @@
 """
-GPT model:
-- the initial stem consists of a combination of token encoding and a positional encoding
-- the meat of it is a uniform sequence of Transformer blocks
-    - each Transformer is a sequential combination of a 1-hidden-layer MLP block and a self-attention block
-    - all blocks feed into a central residual pathway similar to resnets
-- the final decoder is a linear projection into a vanilla Softmax classifier
+GPT model
 """
 
 import math
-import logging
 
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import numpy as np
-
-logger = logging.getLogger(__name__)
-
-# class GPTConfig:
-#     """ base GPT config, params common to all GPT versions """
-#     embd_pdrop = 0.1
-#     resid_pdrop = 0.1
-#     attn_pdrop = 0.1
-#
-#     def __init__(self, vocab_size, block_size, **kwargs):
-#         self.vocab_size = vocab_size
-#         self.block_size = block_size
-#         for k,v in kwargs.items():
-#             setattr(self, k, v)
-#
-# class GPT1Config(GPTConfig):
-#     """ GPT-1 like network roughly 125M params """
-#     n_layer = 12
-#     n_head = 12
-#     n_embd = 768
 
 
 class CausalSelfAttention(nn.Module):
@@ -128,9 +102,6 @@ class GPT(nn.Module):
 
         self.block_size = config.BLOCK_SIZE
         self.apply(self._init_weights)
-        # self.init_pos_emb()
-
-        logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
 
     def get_block_size(self):
         return self.block_size

@@ -8,12 +8,12 @@ MODEL:
   SET_COST_GIOU: 2.0
   TEST_RESOLUTION: 300
   PREDICT_ACTIONS: True
-  NUM_LAYERS: 8
-  NUM_HEADS: 8
-  EMBEDDING_DIM: 512
+  NUM_LAYERS: 2
+  NUM_HEADS: 2
+  EMBEDDING_DIM: 256
   BLOCK_SIZE: 2060
   IMG_FEATURE_SIZE: 256
-  OUTPUT_SIZE: 512
+  OUTPUT_SIZE: 256
   BOX_EMB_SIZE: 256
   EMBEDDING_PDROP: 0.1
   RESIDUAL_PDROP: 0.1
@@ -22,17 +22,17 @@ DATASET:
   TRAIN:
     TYPE: "sequence"
     MODE: "train"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train-full.json"
-    IMAGE_ROOT: "data/interactron/train-full"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train.json"
+    IMAGE_ROOT: "data/interactron/train"
   TEST:
     TYPE: "sequence"
     MODE: "test"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_test.json"
-    IMAGE_ROOT: "data/interactron/test"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val.json"
+    IMAGE_ROOT: "data/interactron/val"
 TRAINER:
   TYPE: "interactron"
-  BATCH_SIZE: 16
-  NUM_WORKERS: 16
+  BATCH_SIZE: 256
+  NUM_WORKERS: 256
   MAX_EPOCHS: 2000
   LEARNING_RATE: 1e-4
   BETA1: 0.9
