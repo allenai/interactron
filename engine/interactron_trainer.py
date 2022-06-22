@@ -52,9 +52,9 @@ class InteractronTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.Adam(raw_model.fusion.get_optimizer_groups(config),
-                                                lr=1e-4, weight_decay=0.1)
+        detector_optimizer = torch.optim.AdamW(raw_model.detector.parameters(), lr=1e-5)
+        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.get_optimizer_groups(config),
+                                                lr=1e-4)#, weight_decay=0.1)
         model.train()
 
         def run_epoch(split):
@@ -88,7 +88,7 @@ class InteractronTrainer:
                 loss_list.append(total_loss.item())
 
                 if is_train:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     detector_optimizer.step()
                     supervisor_optimizer.step()
                     detector_optimizer.zero_grad()
@@ -131,6 +131,8 @@ class InteractronTrainer:
             self.logger.add_value("Test/FN", fns)
             self.logger.add_value("Test/mAP_50", mAP_50)
             self.logger.add_value("Test/mAP", mAP)
+            detector_optimizer.zero_grad()
+            supervisor_optimizer.zero_grad()
             return mAP
 
         best_ap = 0.0
@@ -141,8 +143,8 @@ class InteractronTrainer:
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
                 mAP = run_evaluation()
-            detector_optimizer.zero_grad()
-            supervisor_optimizer.zero_grad()
+            # detector_optimizer.zero_grad()
+            # supervisor_optimizer.zero_grad()
             self.logger.log_values()
 
             # supports early stopping based on the test loss, or just save always if no test set is provided

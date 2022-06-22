@@ -52,8 +52,8 @@ class InteractronRandomTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.Adam(raw_model.fusion.parameters(), lr=1e-4, weight_decay=1e-4)
+        detector_optimizer = torch.optim.AdamW(raw_model.detector.parameters(), lr=1e-5)
+        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.parameters(), lr=1e-4)
         model.train()
 
         def run_epoch(split):
@@ -128,6 +128,8 @@ class InteractronRandomTrainer:
             self.logger.add_value("Test/FN", fns)
             self.logger.add_value("Test/mAP_50", mAP_50)
             self.logger.add_value("Test/mAP", mAP)
+            detector_optimizer.zero_grad()
+            supervisor_optimizer.zero_grad()
             return mAP
 
         best_ap = 0.0
@@ -138,8 +140,8 @@ class InteractronRandomTrainer:
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
                 mAP = run_evaluation()
-            detector_optimizer.zero_grad()
-            supervisor_optimizer.zero_grad()
+            # detector_optimizer.zero_grad()
+            # supervisor_optimizer.zero_grad()
             self.logger.log_values()
 
             # supports early stopping based on the test loss, or just save always if no test set is provided
