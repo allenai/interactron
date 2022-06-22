@@ -52,9 +52,9 @@ class InteractronTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.AdamW(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.get_optimizer_groups(config),
-                                                lr=1e-4)#, weight_decay=0.1)
+        detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-5)
+        supervisor_optimizer = torch.optim.AdamW(raw_model.fusion.get_optimizer_groups(config), lr=1e-4,
+                                                 betas=(config.BETA1, config.BETA2), weight_decay=config.WEIGHT_DECAY)
         model.train()
 
         def run_epoch(split):
@@ -88,7 +88,7 @@ class InteractronTrainer:
                 loss_list.append(total_loss.item())
 
                 if is_train:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_NORM_CLIP)
                     detector_optimizer.step()
                     supervisor_optimizer.step()
                     detector_optimizer.zero_grad()
