@@ -11,7 +11,7 @@ from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_par
     detach_gradients
 from utils.storage_utils import PathStorage
 
-LR = 1e-3
+LR = 1.0
 
 
 class interactron(nn.Module):
