@@ -21,6 +21,37 @@ class detr_multiframe(nn.Module):
         self.logger = None
         self.mode = 'train'
 
+    def predict(self, data):
+        # reformat img and mask data
+        b, s, c, w, h = data["frames"].shape
+        img = data["frames"].view(b*s, c, w, h)
+        mask = data["masks"].view(b*s, w, h)
+        # reformat labels
+        labels = []
+        for i in range(b):
+            for j in range(s):
+                labels.append({
+                    "labels": data["category_ids"][i][j],
+                    "boxes": data["boxes"][i][j]
+                })
+        # get predictions and losses
+        detr_out = self.detector(NestedTensor(img, mask))
+        # unfold images back into batch and sequences
+        # for key in detr_out:
+        #     detr_out[key] = detr_out[key].view(b, s, *detr_out[key].shape[1:])
+        detr_out["embedded_memory_features"] = detr_out["embedded_memory_features"].unsqueeze(0)
+        detr_out["box_features"] = detr_out["box_features"].unsqueeze(0)
+        detr_out["pred_logits"] = detr_out["pred_logits"].unsqueeze(0)
+        detr_out["pred_boxes"] = detr_out["pred_boxes"].unsqueeze(0)
+        out = self.fusion(detr_out)
+
+        predictions = {
+            "pred_boxes": out["pred_boxes"].view(b, s, *out["pred_boxes"].shape[1:]),
+            "pred_logits": out["pred_logits"].view(b, s, *out["pred_logits"].shape[1:])
+        }
+
+        return predictions
+
     def forward(self, data):
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
