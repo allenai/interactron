@@ -9,6 +9,7 @@ from utils.config_utils import (
 
 
 def train():
+    random.seed(42)
     args = get_args()
     cfg = get_config(args.config_file)
     model = build_model(cfg.MODEL)
