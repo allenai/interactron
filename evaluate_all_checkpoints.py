@@ -14,7 +14,7 @@ def evaluate_all():
     args = get_args()
     cfg = get_config(args.config_file)
     model = build_model(cfg.MODEL)
-    evaluator = build_evaluator(model, cfg, load_checkpoint=True)
+    evaluator = build_evaluator(model, cfg, load_checkpoint=False)
 
     results = {}
     for checkpoint in tqdm.tqdm(glob.glob("training_results/an/detectordetector*")):
