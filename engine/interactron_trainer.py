@@ -141,8 +141,8 @@ class InteractronTrainer:
 
         best_ap = 0.0
         self.tokens = 0  # counter used for learning rate decay
-        # mAP = run_evaluation()
-        # self.logger.log_values()
+        mAP = run_evaluation()
+        self.logger.log_values()
         for epoch in range(1, config.MAX_EPOCHS):
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
