@@ -65,9 +65,18 @@ class InteractronTrainer:
 
         def run_epoch(split):
             is_train = split == 'train'
+
+            def seed_worker(worker_id):
+                worker_seed = torch.initial_seed() % 2 ** 32
+                np.random.seed(worker_seed)
+                random.seed(worker_seed)
+
+            g = torch.Generator()
+            g.manual_seed(42)
+
             loader = DataLoader(self.train_dataset if is_train else self.test_dataset, shuffle=is_train,
                                 pin_memory=True, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS,
-                                collate_fn=collate_fn)
+                                collate_fn=collate_fn, worker_init_fn=seed_worker, generator=g,)
 
             loss_list = []
             pbar = tqdm(enumerate(loader), total=len(loader))
