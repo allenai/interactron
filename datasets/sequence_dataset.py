@@ -41,9 +41,7 @@ class SequenceDataset(Dataset):
 
         # seed the random generator
         if self.mode == "test":
-            random.seed('92S9YeeeidUNXKYG')
-        else:
-            random.seed(42)
+            actions = ['MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead']
 
         state_name = scene["root"]
         state = scene["state_table"][state_name]

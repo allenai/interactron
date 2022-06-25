@@ -33,9 +33,6 @@ class interactron(nn.Module):
         self.path_storage = {}
 
     def predict(self, data):
-        random.seed(42)
-        torch.manual_seed(42)
-        np.random.seed(42)
 
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
@@ -66,9 +63,6 @@ class interactron(nn.Module):
         return {k: v.unsqueeze(0) for k, v in post_adaptive_out.items()}
 
     def forward(self, data, train=True):
-        random.seed(42)
-        torch.manual_seed(42)
-        np.random.seed(42)
 
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape

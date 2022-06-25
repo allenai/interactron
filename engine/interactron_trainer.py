@@ -51,9 +51,6 @@ class InteractronTrainer:
         torch.save({"model": raw_model.state_dict()}, self.checkpoint_path if name is None else name)
 
     def train(self):
-        random.seed(42)
-        torch.manual_seed(42)
-        np.random.seed(42)
 
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
@@ -66,17 +63,9 @@ class InteractronTrainer:
         def run_epoch(split):
             is_train = split == 'train'
 
-            def seed_worker(worker_id):
-                worker_seed = torch.initial_seed() % 2 ** 32
-                np.random.seed(worker_seed)
-                random.seed(worker_seed)
-
-            g = torch.Generator()
-            g.manual_seed(42)
-
             loader = DataLoader(self.train_dataset if is_train else self.test_dataset, shuffle=is_train,
                                 pin_memory=True, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS,
-                                collate_fn=collate_fn, worker_init_fn=seed_worker, generator=g,)
+                                collate_fn=collate_fn)
 
             loss_list = []
             pbar = tqdm(enumerate(loader), total=len(loader))
@@ -90,10 +79,10 @@ class InteractronTrainer:
 
                 # forward the model
                 predictions, losses = model(data)
-                detector_loss = losses["loss_detector_ce"] + 5*losses["loss_detector_giou"] + \
-                                2*losses["loss_detector_bbox"]
-                supervisor_loss = losses["loss_supervisor_ce"] +5*losses["loss_supervisor_giou"] + \
-                                  2*losses["loss_supervisor_bbox"]
+                detector_loss = losses["loss_detector_ce"] + 5 * losses["loss_detector_giou"] + \
+                                2 * losses["loss_detector_bbox"]
+                supervisor_loss = losses["loss_supervisor_ce"] + 5 * losses["loss_supervisor_giou"] + \
+                                  2 * losses["loss_supervisor_bbox"]
 
                 # log the losses
                 for name, loss_comp in losses.items():
@@ -155,7 +144,7 @@ class InteractronTrainer:
 
         best_ap = 0.0
         self.tokens = 0  # counter used for learning rate decay
-        mAP = run_evaluation()
+        # mAP = run_evaluation()
         self.logger.log_values()
         for epoch in range(1, config.MAX_EPOCHS):
             run_epoch('train')
