@@ -87,6 +87,7 @@ class InteractronRandomTrainer:
                 loss_list.append(total_loss.item())
 
                 if is_train:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_NORM_CLIP)
                     detector_optimizer.step()
                     supervisor_optimizer.step()
                     detector_optimizer.zero_grad()

@@ -11,7 +11,7 @@ from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_par
     detach_gradients
 from utils.storage_utils import PathStorage
 
-LR = 1.0
+LR = 0.1
 
 
 class interactron(nn.Module):
@@ -97,8 +97,8 @@ class interactron(nn.Module):
 
             fusion_out = self.fusion(pre_adaptive_out)
             learned_loss = torch.norm(fusion_out["loss"])
-            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
-                                                allow_unused=True)
+            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=False, retain_graph=True,
+                                                allow_unused=False)
             first_frame_out = {k: v[0, [0]] for k, v in pre_adaptive_out.items()}
             gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
             gt_loss = gt_loss["loss_ce"] + 5 * gt_loss["loss_giou"] + 2 * gt_loss["loss_bbox"]
@@ -128,9 +128,9 @@ class interactron(nn.Module):
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), LR)
             set_parameters(self.detector, fast_weights)
 
-            # import random
-            # ridx = random.randint(0, 4)
-            ridx = 0
+            import random
+            ridx = random.randint(0, 4)
+            # ridx = 0
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})

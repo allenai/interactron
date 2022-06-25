@@ -10,7 +10,7 @@ from models.learner import Learner
 from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters, detach_parameters, \
     detach_gradients
 
-LR = 1e-3
+LR = 1.0
 
 
 class interactron_random(nn.Module):

@@ -51,7 +51,7 @@ class DirectSupervisionTrainer:
     def train(self):
         model, config = self.model, self.config.TRAINER
         raw_model = model.module if hasattr(self.model, "module") else model
-        optimizer = torch.optim.AdamW(raw_model.get_optimizer_groups(config), lr=1e-5)
+        optimizer = torch.optim.Adam(raw_model.get_optimizer_groups(config), lr=1e-4)
 
         def run_epoch(split):
             is_train = split == 'train'
@@ -93,7 +93,7 @@ class DirectSupervisionTrainer:
                     # backprop and update the parameters
                     # model.zero_grad()
                     # loss.backward()
-                    # torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_NORM_CLIP)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_NORM_CLIP)
                     optimizer.step()
                     optimizer.zero_grad()
 
@@ -131,6 +131,7 @@ class DirectSupervisionTrainer:
             self.logger.add_value("Test/FN", fns)
             self.logger.add_value("Test/mAP_50", mAP_50)
             self.logger.add_value("Test/mAP", mAP)
+            model.zero_grad()
             return mAP
 
         best_ap = 0.0
@@ -141,7 +142,6 @@ class DirectSupervisionTrainer:
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
                 mAP = run_evaluation()
-            optimizer.zero_grad()
             self.logger.log_values()
 
             # supports early stopping based on the test loss, or just save always if no test set is provided
