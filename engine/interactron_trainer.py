@@ -112,9 +112,12 @@ class InteractronTrainer:
                                        float(max(1, config.FINAL_TOKENS - config.WARMUP_TOKENS))
                             lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
                         lr = config.LEARNING_RATE * lr_mult
-                        print("LR:", lr)
                         # for param_group in supervisor_optimizer.param_groups:
                         #     param_group['lr'] = lr
+                        # for param_group in detector_optimizer.param_groups:
+                        #     param_group['lr'] = lr
+                        for param_group in supervisor_optimizer.param_groups:
+                            param_group['lr'] = lr
                         # for param_group in detector_optimizer.param_groups:
                         #     param_group['lr'] = lr
                     else:

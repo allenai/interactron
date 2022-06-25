@@ -34,6 +34,7 @@ class SequenceDataset(Dataset):
         return len(self.annotations["data"])
 
     def __getitem__(self, idx, actions=None):
+        print("IDX:", idx)
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
