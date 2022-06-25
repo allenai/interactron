@@ -162,6 +162,10 @@ class interactron(nn.Module):
                                 for k, v in supervisor_losses[0].items()}
         losses = mean_detector_losses
         losses.update(mean_supervisor_losses)
+
+        print(list(self.fusion.parameters())[0].grad[0, 0, :10])
+        print(list(self.detector.parameters())[0].grad[0, :10])
+
         return predictions, losses
 
     def eval(self):
