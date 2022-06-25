@@ -11,9 +11,10 @@ from utils.config_utils import (
 
 
 def train():
-    # torch.use_deterministic_algorithms(True)
+    torch.use_deterministic_algorithms(True)
     random.seed(42)
     torch.manual_seed(42)
+    torch.cuda.seed(42)
     numpy.random.seed(42)
     args = get_args()
     cfg = get_config(args.config_file)
