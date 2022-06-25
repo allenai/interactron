@@ -1,5 +1,6 @@
 import torch
 import random
+import numpy
 from utils.config_utils import (
     get_config,
     get_args,
@@ -11,6 +12,8 @@ from utils.config_utils import (
 
 def train():
     random.seed(42)
+    torch.manual_seed(42)
+    numpy.seed(42)
     args = get_args()
     cfg = get_config(args.config_file)
     model = build_model(cfg.MODEL)
