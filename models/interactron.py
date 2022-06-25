@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+import random
+import numpy as np
 
 from models.detr_models.detr import build
 from models.detr_models.util.misc import NestedTensor
@@ -31,6 +33,9 @@ class interactron(nn.Module):
         self.path_storage = {}
 
     def predict(self, data):
+        random.seed(42)
+        torch.manual_seed(42)
+        np.random.seed(42)
 
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
@@ -61,6 +66,10 @@ class interactron(nn.Module):
         return {k: v.unsqueeze(0) for k, v in post_adaptive_out.items()}
 
     def forward(self, data, train=True):
+        random.seed(42)
+        torch.manual_seed(42)
+        np.random.seed(42)
+
         # reformat img and mask data
         b, s, c, w, h = data["frames"].shape
         img = data["frames"].view(b, s, c, w, h)
@@ -128,9 +137,8 @@ class interactron(nn.Module):
             fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), LR)
             set_parameters(self.detector, fast_weights)
 
-            # import random
-            # ridx = random.randint(0, 4)
-            ridx = 0
+            ridx = random.randint(0, 4)
+            # ridx = 0
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})

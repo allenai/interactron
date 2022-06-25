@@ -163,7 +163,7 @@ class InteractiveDaatset(Dataset):
         scene = self.annotations["data"][idx]
 
         # seed the random generator
-        random.seed(0)
+        random.seed(42)
 
         state_name = scene["root"]
         state = scene["state_table"][state_name]

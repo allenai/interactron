@@ -4,6 +4,7 @@ The interactorn model is trained on random sequences of data and supervised to p
 """
 
 import math
+import random
 
 from tqdm import tqdm
 import numpy as np
@@ -50,6 +51,10 @@ class InteractronTrainer:
         torch.save({"model": raw_model.state_dict()}, self.checkpoint_path if name is None else name)
 
     def train(self):
+        random.seed(42)
+        torch.manual_seed(42)
+        np.random.seed(42)
+
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
         detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-5)
