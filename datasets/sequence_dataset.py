@@ -42,7 +42,7 @@ class SequenceDataset(Dataset):
         # seed the random generator
         if self.mode == "test":
             random.seed("a")
-            actions = ['MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead']
+            # actions = ['MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead']
         else:
             random.seed("b")
 
