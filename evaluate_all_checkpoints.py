@@ -14,13 +14,14 @@ def evaluate_all():
     args = get_args()
     cfg = get_config(args.config_file)
     model = build_model(cfg.MODEL)
-    evaluator = build_evaluator(model, cfg, load_checkpoint=False)
 
     results = {}
     for checkpoint in tqdm.tqdm(glob.glob("training_results/an/detectordetector*")):
         weights = torch.load(checkpoint, map_location='cpu')['model']
         model.load_state_dict(weights)
+        evaluator = build_evaluator(model, cfg, load_checkpoint=False)
         mAP_50, mAP, tps, fps, fns = evaluator.evaluate(save_results=False)
+        print(mAP_50, mAP)
         results[checkpoint] = {
             "mAP_50": mAP_50,
             "mAP": mAP,
