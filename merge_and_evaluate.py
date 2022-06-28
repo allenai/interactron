@@ -39,7 +39,7 @@ def evaluate_all():
     model = build_model(cfg.MODEL)
     evaluator = build_evaluator(model, cfg, load_checkpoint=False)
 
-    with open('selections.json') as fp:
+    with open('selections-interactron-random.json') as fp:
         model_groups = json.load(fp)
 
     results = {}
@@ -61,7 +61,7 @@ def evaluate_all():
             "fns": fns
         }
 
-    with open('an_results.json', 'w') as fp:
+    with open('interactron-random_results.json', 'w') as fp:
         json.dump(results, fp)
 
 
