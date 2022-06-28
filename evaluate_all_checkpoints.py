@@ -33,7 +33,7 @@ def evaluate_all():
             "fns": fns
         }
 
-    with open('an_results.json', 'w') as fp:
+    with open('an_results_08.json', 'w') as fp:
         json.dump(results, fp)
 
 

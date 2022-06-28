@@ -13,7 +13,7 @@ from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_par
     detach_gradients
 from utils.storage_utils import PathStorage
 
-LR = 0.1
+LR = 1e-3
 
 
 class interactron(nn.Module):
@@ -157,8 +157,8 @@ class interactron(nn.Module):
         losses = mean_detector_losses
         losses.update(mean_supervisor_losses)
 
-        print(list(self.fusion.parameters())[0].grad[0, 0, :10])
-        print(list(self.detector.parameters())[0].grad[0, :10])
+        # print(list(self.fusion.parameters())[0].grad[0, 0, :10])
+        # print(list(self.detector.parameters())[0].grad[0, :10])
 
         return predictions, losses
 
