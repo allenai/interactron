@@ -27,8 +27,8 @@ DATASET:
   TEST:
     TYPE: "sequence"
     MODE: "test"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_test.json"
-    IMAGE_ROOT: "data/interactron/test"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val-procthor.json"
+    IMAGE_ROOT: "data/interactron/val-procthor"
 TRAINER:
   TYPE: "interactron_random"
   BATCH_SIZE: 16
