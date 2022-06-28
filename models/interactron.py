@@ -13,7 +13,7 @@ from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_par
     detach_gradients
 from utils.storage_utils import PathStorage
 
-LR = 0.1
+LR = 1e-3
 
 
 class interactron(nn.Module):
@@ -100,7 +100,7 @@ class interactron(nn.Module):
 
             fusion_out = self.fusion(pre_adaptive_out)
             learned_loss = torch.norm(fusion_out["loss"])
-            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=False, retain_graph=True,
+            detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
                                                 allow_unused=False)
             first_frame_out = {k: v[0, [0]] for k, v in pre_adaptive_out.items()}
             gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
@@ -157,8 +157,8 @@ class interactron(nn.Module):
         losses = mean_detector_losses
         losses.update(mean_supervisor_losses)
 
-        print(list(self.fusion.parameters())[0].grad[0, 0, :10])
-        print(list(self.detector.parameters())[0].grad[0, :10])
+        # print(list(self.fusion.parameters())[0].grad[0, 0, :10])
+        # print(list(self.detector.parameters())[0].grad[0, :10])
 
         return predictions, losses
 

@@ -8,8 +8,8 @@ MODEL:
   SET_COST_GIOU: 2.0
   TEST_RESOLUTION: 300
   PREDICT_ACTIONS: True
-  NUM_LAYERS: 8
-  NUM_HEADS: 8
+  NUM_LAYERS: 2
+  NUM_HEADS: 2
   EMBEDDING_DIM: 256
   BLOCK_SIZE: 2060
   IMG_FEATURE_SIZE: 256
@@ -27,8 +27,8 @@ DATASET:
   TEST:
     TYPE: "sequence"
     MODE: "test"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val.json"
-    IMAGE_ROOT: "data/interactron/val"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_test.json"
+    IMAGE_ROOT: "data/interactron/test"
 TRAINER:
   TYPE: "interactron"
   BATCH_SIZE: 16
@@ -39,11 +39,11 @@ TRAINER:
   BETA2: 0.95
   MOMENTUM: 0.9
   GRAD_NORM_CLIP: 1.0
-  WEIGHT_DECAY: 0.0
-  OPTIM_TYPE: "AdamW"
+  WEIGHT_DECAY: 0.1
+  OPTIM_TYPE: "Adam"
   LR_DECAY: False
   WARMUP_TOKENS: 0
-  FINAL_TOKENS: 0 # 2.5e7
+  FINAL_TOKENS: 0 # 1.0e7
   OUTPUT_DIRECTORY: "training_results/interactron"
 EVALUATOR:
   TYPE: "interactive_evaluator"

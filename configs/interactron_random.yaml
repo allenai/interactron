@@ -22,8 +22,8 @@ DATASET:
   TRAIN:
     TYPE: "sequence"
     MODE: "train"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train-full.json"
-    IMAGE_ROOT: "data/interactron/train-full"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train.json"
+    IMAGE_ROOT: "data/interactron/train"
   TEST:
     TYPE: "sequence"
     MODE: "test"
@@ -40,10 +40,10 @@ TRAINER:
   MOMENTUM: 0.9
   GRAD_NORM_CLIP: 1.0
   WEIGHT_DECAY: 0.1
-  OPTIM_TYPE: "AdamW"
+  OPTIM_TYPE: "Adam"
   LR_DECAY: False
   WARMUP_TOKENS: 0
-  FINAL_TOKENS: 0 # 2.5e7
+  FINAL_TOKENS: 1.0e7
   OUTPUT_DIRECTORY: "training_results/interactron_random"
 EVALUATOR:
   # TYPE: "every_path_evaluator"

@@ -19,7 +19,7 @@ def evaluate_all():
     results = {}
     checkpoints = glob.glob("training_results/interactron_random/06-26-2022:06:12:51/detectordetector*")
     checkpoints.sort()
-    checkpoints = checkpoints[300:400]
+    checkpoints = checkpoints[100:200]
     for checkpoint in tqdm.tqdm(checkpoints):
         weights = torch.load(checkpoint, map_location='cpu')['model']
         evaluator.model.load_state_dict(weights)
