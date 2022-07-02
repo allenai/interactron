@@ -8,12 +8,12 @@ MODEL:
   SET_COST_GIOU: 2.0
   TEST_RESOLUTION: 300
   PREDICT_ACTIONS: True
-  NUM_LAYERS: 2
-  NUM_HEADS: 2
-  EMBEDDING_DIM: 256
+  NUM_LAYERS: 8
+  NUM_HEADS: 8
+  EMBEDDING_DIM: 512
   BLOCK_SIZE: 2060
   IMG_FEATURE_SIZE: 256
-  OUTPUT_SIZE: 256
+  OUTPUT_SIZE: 512
   BOX_EMB_SIZE: 256
   EMBEDDING_PDROP: 0.1
   RESIDUAL_PDROP: 0.1
@@ -27,8 +27,8 @@ DATASET:
   TEST:
     TYPE: "sequence"
     MODE: "test"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_test.json"
-    IMAGE_ROOT: "data/interactron/test"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_val.json"
+    IMAGE_ROOT: "data/interactron/val"
 TRAINER:
   TYPE: "interactron"
   BATCH_SIZE: 16
@@ -41,13 +41,15 @@ TRAINER:
   GRAD_NORM_CLIP: 1.0
   WEIGHT_DECAY: 0.1
   OPTIM_TYPE: "Adam"
-  LR_DECAY: False
+  LR_DECAY: True
   WARMUP_TOKENS: 0
-  FINAL_TOKENS: 0 # 1.0e7
+  FINAL_TOKENS: 0.8e7
   OUTPUT_DIRECTORY: "training_results/interactron"
 EVALUATOR:
   TYPE: "interactive_evaluator"
+  # TYPE: "random_policy_evaluator"
   BATCH_SIZE: 1
   NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/interactron"
-  CHECKPOINT: "pretrained_weights/interactron.pth"
+  # CHECKPOINT: "pretrained_weights/interactron.pth"
+  CHECKPOINT: "training_results/interactron/06-28-2022:18:51:44/detectordetector_0126.pt"

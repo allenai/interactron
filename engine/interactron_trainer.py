@@ -120,6 +120,7 @@ class InteractronTrainer:
                         #     param_group['lr'] = lr
                     else:
                         lr = config.LEARNING_RATE
+                    self.logger.add_value("{}/LR".format("Train" if is_train else "Test"), lr)
 
                     # report progress
                     pbar.set_description(

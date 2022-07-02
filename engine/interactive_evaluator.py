@@ -70,7 +70,7 @@ class InteractiveEvaluator:
 
 
             # forward the model
-            predictions, losses = model(data)
+            predictions = model.predict(data)
 
             with torch.no_grad():
                 for b in range(predictions["pred_boxes"].shape[0]):
@@ -82,7 +82,7 @@ class InteractiveEvaluator:
                     gt_cats = data["category_ids"][b][0]
                     # remove background predictions
                     non_background_idx = pred_cats != 1235
-                    pred_cats -= 1
+                    # pred_cats -= 1
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
@@ -93,8 +93,10 @@ class InteractiveEvaluator:
                     pred_boxes = pred_boxes[pruned_idxs]
                     pred_scores = pred_scores[pruned_idxs]
                     # get sets of categories of predictions and labels
-                    pred_cat_set = set(pred_cats)
-                    gt_cat_set = set(gt_cats)
+                    pred_cat_set = set([int(c) for c in pred_cats])
+                    gt_cat_set = set([int(c) for c in gt_cats])
+                    # pred_cat_set = set(pred_cats)
+                    # gt_cat_set = set(gt_cats)
                     pred_only_cat_set = set(THOR_CLASS_IDS).intersection(pred_cat_set - gt_cat_set)
                     # add each prediction to the list of detections
                     for cat in gt_cat_set:
@@ -110,7 +112,7 @@ class InteractiveEvaluator:
                                         "iou": cat_ious[i].max().item(),
                                         "category_match": True,
                                         "type": "tp",
-                                        "pred_cat": cat.item(),
+                                        "pred_cat": cat,
                                         "pred_score": cat_pred_scores[i].item(),
                                         "box": [coord.item() for coord in cat_pred_boxes[i]],
                                         "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
@@ -122,7 +124,7 @@ class InteractiveEvaluator:
                                         "iou": cat_ious[i].max().item(),
                                         "category_match": True,
                                         "type": "fp",
-                                        "pred_cat": cat.item(),
+                                        "pred_cat": cat,
                                         "pred_score": cat_pred_scores[i].item(),
                                         "box": [coord.item() for coord in cat_pred_boxes[i]],
                                         "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *
@@ -135,7 +137,7 @@ class InteractiveEvaluator:
                                         "iou": 0.0,
                                         "category_match": False,
                                         "type": "fn",
-                                        "pred_cat": cat.item(),
+                                        "pred_cat": cat,
                                         "pred_score": 0.0,
                                         "box": [coord.item() for coord in cat_gt_boxes[j]],
                                         "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
@@ -149,7 +151,7 @@ class InteractiveEvaluator:
                                     "iou": 0.0,
                                     "category_match": False,
                                     "type": "fn",
-                                    "pred_cat": cat.item(),
+                                    "pred_cat": cat,
                                     "pred_score": 0.0,
                                     "box": [coord.item() for coord in cat_gt_boxes[j]],
                                     "area": ((cat_gt_boxes[j][2] - cat_gt_boxes[j][0])  *
@@ -164,7 +166,7 @@ class InteractiveEvaluator:
                                 "iou": 0.0,
                                 "category_match": False,
                                 "type": "fp",
-                                "pred_cat": cat.item(),
+                                "pred_cat": cat,
                                 "pred_score": cat_pred_scores[i].item(),
                                 "box": [coord.item() for coord in cat_pred_boxes[i]],
                                 "area": ((cat_pred_boxes[i][2] - cat_pred_boxes[i][0])  *

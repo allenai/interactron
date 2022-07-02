@@ -56,7 +56,7 @@ class InteractiveDaatset(Dataset):
             img_bounding_boxes = []
             for k, v in state["detections"].items():
                 img_object_ids.append(hash(k.encode()))
-                img_class_ids.append(v["category_id"])
+                img_class_ids.append(v["category_id"]+1)
                 w, h, cw, ch = v["bbox"]
                 img_bounding_boxes.append([w, h, w+cw, h+ch])
             if len(img_bounding_boxes) != 0:
@@ -75,16 +75,16 @@ class InteractiveDaatset(Dataset):
             bounding_boxes.append(targets["boxes"] if targets is not None else torch.zeros(0, 4))
             object_ids.append(img_object_ids)
             category_ids.append(targets["labels"] if targets is not None else torch.zeros(0).long())
-            # if i < 4:
-            #     state_name = state["actions"][actions[i]]
-            #     state = scene["state_table"][state_name]
+            if i < len(actions):
+                state_name = state["actions"][actions[i]]
+                state = scene["state_table"][state_name]
 
         sample = {
             'frames': torch.stack(frames, dim=0).unsqueeze(0),
             "masks": torch.stack(masks, dim=0).unsqueeze(0),
             "actions": torch.tensor([ACTIONS.index(a) for a in actions], dtype=torch.long).unsqueeze(0),
-            "category_ids": torch.stack(category_ids, dim=0).unsqueeze(0),
-            "boxes": torch.stack(bounding_boxes, dim=0).unsqueeze(0),
+            "category_ids": [category_ids],
+            "boxes": [bounding_boxes],
             "episode_ids": self.idx,
             "initial_image_path": [initial_img_path]
         }
@@ -117,7 +117,7 @@ class InteractiveDaatset(Dataset):
             img_bounding_boxes = []
             for k, v in state["detections"].items():
                 img_object_ids.append(hash(k.encode()))
-                img_class_ids.append(v["category_id"])
+                img_class_ids.append(v["category_id"]+1)
                 w, h, cw, ch = v["bbox"]
                 img_bounding_boxes.append([w, h, w+cw, h+ch])
             if len(img_bounding_boxes) != 0:
@@ -136,17 +136,17 @@ class InteractiveDaatset(Dataset):
             bounding_boxes.append(targets["boxes"] if targets is not None else torch.zeros(0, 4))
             object_ids.append(img_object_ids)
             category_ids.append(targets["labels"] if targets is not None else torch.zeros(0).long())
-            # if i < 4:
-            #     state_name = state["actions"][actions[i]]
-            #     state = scene["state_table"][state_name]
+            if i < len(actions):
+                state_name = state["actions"][actions[i]]
+                state = scene["state_table"][state_name]
 
         sample = {
             'frames': torch.stack(frames, dim=0).unsqueeze(0),
             "masks": torch.stack(masks, dim=0).unsqueeze(0),
             "actions": torch.tensor([ACTIONS.index(a) for a in actions], dtype=torch.long).unsqueeze(0),
             "object_ids": object_ids,
-            "category_ids": torch.stack(category_ids, dim=0).unsqueeze(0),
-            "boxes": torch.stack(bounding_boxes, dim=0).unsqueeze(0),
+            "category_ids": [category_ids],
+            "boxes": [bounding_boxes],
             "episode_ids": self.idx,
             "initial_image_path": [initial_img_path]
         }

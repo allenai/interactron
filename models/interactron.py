@@ -101,7 +101,7 @@ class interactron(nn.Module):
             fusion_out = self.fusion(pre_adaptive_out)
             learned_loss = torch.norm(fusion_out["loss"])
             detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
-                                                allow_unused=False)
+                                                allow_unused=True)
             first_frame_out = {k: v[0, [0]] for k, v in pre_adaptive_out.items()}
             gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
             gt_loss = gt_loss["loss_ce"] + 5 * gt_loss["loss_giou"] + 2 * gt_loss["loss_bbox"]
@@ -122,6 +122,8 @@ class interactron(nn.Module):
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
             supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
             supervisor_loss["loss_path"] = F.cross_entropy(fusion_out["actions"].view(4, 4), best_path)
+            supervisor_loss["ifga"] = torch.mean(torch.stack([torch.norm(detector_grad[i] - gt_grad[i], p=1) 
+                                                              for i in range(len(detector_grad))], dim=0))
             supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
             supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
                               2 * supervisor_loss["loss_bbox"] + supervisor_loss["loss_path"]
