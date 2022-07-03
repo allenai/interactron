@@ -228,12 +228,12 @@ class RandomPolicyEvaluator:
 
         ap_50 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.5])
         ap = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)))
-        ap_small = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
-                                   min_area=0.0, max_area=32**2/300**2)
-        ap_medium = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
-                                   min_area=32**2/300**2, max_area=96**2/300**2)
-        ap_large = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
-                                   min_area=96**2/300**2, max_area=1.0)
+        # ap_small = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+        #                            min_area=0.0, max_area=32**2/300**2)
+        # ap_medium = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+        #                            min_area=32**2/300**2, max_area=96**2/300**2)
+        # ap_large = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+        #                            min_area=96**2/300**2, max_area=1.0)
 
         if not save_results:
             return ap_50, ap, len(tps), len(fps), len(fns)
@@ -305,17 +305,16 @@ class RandomPolicyEvaluator:
                     r.append(0 if len(tps) == 0 else len(tps) / (len(tps) + len(fns)))
 
                 # compute AP using 11 Point Interpolation of PR Curve
-                p.reverse()
-                r.reverse()
+                # p.reverse()
+                # r.reverse()
+                p = [0.0] + p
+                r = [r[0] + 0.000001] + r
                 interpolation_samples = []
                 r_idx = 0
-                for r_cutoff in np.arange(0, 1.001, 0.1):
-                    while r_idx < len(r) and r[r_idx] < r_cutoff:
+                for r_cutoff in np.arange(1.0, -0.0001, -0.1):
+                    while r_idx < len(r)-1 and r[r_idx] > r_cutoff:
                         r_idx += 1
-                    if r_idx >= len(r):
-                        interpolation_samples.append(0.0)
-                    else:
-                        interpolation_samples.append(max(p[r_idx:]))
+                    interpolation_samples.append(max(p[:r_idx+1]))
                 aps.append(np.mean(interpolation_samples))
 
         return np.mean(aps)
