@@ -255,9 +255,8 @@ class RandomPolicyEvaluator:
         with open(self.out_dir + "results.json", 'w') as f:
             json.dump(results, f)
 
-
     @staticmethod
-    def compute_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
+    def compute_ap_per_cat(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
         aps = []
         unique_cats = list(set([d['pred_cat'] for d in detections]))
         for cat in unique_cats:
@@ -305,8 +304,6 @@ class RandomPolicyEvaluator:
                     r.append(0 if len(tps) == 0 else len(tps) / (len(tps) + len(fns)))
 
                 # compute AP using 11 Point Interpolation of PR Curve
-                # p.reverse()
-                # r.reverse()
                 p = [0.0] + p
                 r = [r[0] + 0.000001] + r
                 interpolation_samples = []
@@ -319,6 +316,59 @@ class RandomPolicyEvaluator:
 
         return np.mean(aps)
 
+    @staticmethod
+    def compute_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
+        aps = []
+        cat_detections = [d for d in detections if min_area < d["area"] < max_area]
+
+        # compute ap for every iou threshold specified
+        for iou_thresh in iou_thresholds:
+            tps = [d for d in cat_detections if d["type"] == "tp"]
+            fps = [d for d in cat_detections if d["type"] == "fp"]
+            fns = [d for d in cat_detections if d["type"] == "fn"]
+            p = []
+            r = []
+
+            # move all detections with an iou under the threshold from the tp set to the fp set
+            i = 0
+            while i < len(tps):
+                if tps[i]["iou"] < iou_thresh:
+                    fps.append(tps.pop(i))
+                else:
+                    i += 1
+
+            # compute PR curve for various confidence levels
+            for conf_thresh in np.arange(0.0, 1.0, 1.0 / nsamples):
+                # remove all prediction with a confidence bellow the threshold
+                i = 0
+                while i < len(tps):
+                    if tps[i]["pred_score"] < conf_thresh:
+                        tps.pop(i)
+                    else:
+                        i += 1
+                i = 0
+                while i < len(fps):
+                    if fps[i]["pred_score"] < conf_thresh:
+                        fps.pop(i)
+                    else:
+                        i += 1
+
+                # compute p and r values for current confidence threshold
+                p.append(0 if len(tps) == 0 else len(tps) / (len(tps) + len(fps)))
+                r.append(0 if len(tps) == 0 else len(tps) / (len(tps) + len(fns)))
+
+            # compute AP using 11 Point Interpolation of PR Curve
+            p = [0.0] + p
+            r = [r[0] + 0.000001] + r
+            interpolation_samples = []
+            r_idx = 0
+            for r_cutoff in np.arange(1.0, -0.0001, -0.1):
+                while r_idx < len(r)-1 and r[r_idx] > r_cutoff:
+                    r_idx += 1
+                interpolation_samples.append(max(p[:r_idx+1]))
+            aps.append(np.mean(interpolation_samples))
+
+        return np.mean(aps)
 
     @staticmethod
     def compute_pr(detections, nsamples=100, iou_thresh=0.5, min_area=0.0, max_area=1.0):
