@@ -124,7 +124,7 @@ class DirectSupervisionTrainer:
                 return test_loss
 
         def run_evaluation():
-            # test_loss = run_epoch('test')
+            test_loss = run_epoch('test')
             mAP_50, mAP, tps, fps, fns = self.evaluator.evaluate(save_results=False)
             self.logger.add_value("Test/TP", tps)
             self.logger.add_value("Test/FP", fps)
