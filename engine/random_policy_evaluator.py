@@ -256,7 +256,7 @@ class RandomPolicyEvaluator:
             json.dump(results, f)
 
     @staticmethod
-    def compute_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
+    def compute_cat_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
         aps = []
         unique_cats = list(set([d['pred_cat'] for d in detections]))
         for cat in unique_cats:
@@ -317,15 +317,15 @@ class RandomPolicyEvaluator:
         return np.mean(aps)
 
     @staticmethod
-    def compute_full_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
+    def compute_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
         aps = []
-        cat_detections = [d for d in detections if min_area < d["area"] < max_area]
+        detections = [d for d in detections if min_area < d["area"] < max_area]
 
         # compute ap for every iou threshold specified
         for iou_thresh in iou_thresholds:
-            tps = [d for d in cat_detections if d["type"] == "tp"]
-            fps = [d for d in cat_detections if d["type"] == "fp"]
-            fns = [d for d in cat_detections if d["type"] == "fn"]
+            tps = [d for d in detections if d["type"] == "tp"]
+            fps = [d for d in detections if d["type"] == "fp"]
+            fns = [d for d in detections if d["type"] == "fn"]
             p = []
             r = []
 
@@ -362,7 +362,7 @@ class RandomPolicyEvaluator:
             r = [r[0] + 0.000001] + r
             interpolation_samples = []
             r_idx = 0
-            for r_cutoff in np.arange(1.0, -0.0001, -0.1):
+            for r_cutoff in np.arange(1.0, -0.0001, -0.01):
                 while r_idx < len(r)-1 and r[r_idx] > r_cutoff:
                     r_idx += 1
                 interpolation_samples.append(max(p[:r_idx+1]))

@@ -205,48 +205,116 @@ class InteractiveEvaluator:
         fps = [x for x in detections if x["type"] == "fp"]
         fns = [x for x in detections if x["type"] == "fn"]
 
-        aps = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
-            aps.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        # aps = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
+        #     aps.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        #
+        # aps_small = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=0.0, max_area=32**2/300**2)
+        #     aps_small.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        #
+        # aps_medium = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh,
+        #                             min_area=32**2/300**2, max_area=96**2/300**2)
+        #     aps_medium.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        #
+        # aps_large = []
+        # for thresh in np.arange(0.5, 1.0, 0.05):
+        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
+        #     aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
+        #
+        # p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
+        # ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
+        # print("AP_50:", ap_50)
+        #
+        # if not save_results:
+        #     return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
+        #
+        # plt.plot(r, p)
+        # plt.title("PR Curve | AP_50=" + str(ap_50))
+        # plt.xlabel("Recall")
+        # plt.ylabel("Precision")
+        # plt.savefig(self.out_dir + "pr_curve.png")
+        #
+        # results = {
+        #     "AP_50": ap_50,
+        #     "detections": detections
+        # }
+        #
+        # os.makedirs(self.out_dir, exist_ok=True)
+        # with open(self.out_dir + "results.json", 'w') as f:
+        #     json.dump(results, f)
 
-        aps_small = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=0.0, max_area=32**2/300**2)
-            aps_small.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-
-        aps_medium = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh,
-                                    min_area=32**2/300**2, max_area=96**2/300**2)
-            aps_medium.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-
-        aps_large = []
-        for thresh in np.arange(0.5, 1.0, 0.05):
-            p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
-            aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-
-        p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
-        ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
-        print("AP_50:", ap_50)
+        ap_50 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.5])
+        ap = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)))
+        # ap_small = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+        #                            min_area=0.0, max_area=32**2/300**2)
+        # ap_medium = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+        #                            min_area=32**2/300**2, max_area=96**2/300**2)
+        # ap_large = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+        #                            min_area=96**2/300**2, max_area=1.0)
 
         if not save_results:
-            return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
+            return ap_50, ap, len(tps), len(fps), len(fns)
 
-        plt.plot(r, p)
-        plt.title("PR Curve | AP_50=" + str(ap_50))
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.savefig(self.out_dir + "pr_curve.png")
+        print("AP_50:", ap_50)
 
-        results = {
-            "AP_50": ap_50,
-            "detections": detections
-        }
+    @staticmethod
+    def compute_ap(detections, nsamples=100, iou_thresholds=[0.5], min_area=0.0, max_area=1.0):
+        aps = []
+        detections = [d for d in detections if min_area < d["area"] < max_area]
 
-        os.makedirs(self.out_dir, exist_ok=True)
-        with open(self.out_dir + "results.json", 'w') as f:
-            json.dump(results, f)
+        # compute ap for every iou threshold specified
+        for iou_thresh in iou_thresholds:
+            tps = [d for d in detections if d["type"] == "tp"]
+            fps = [d for d in detections if d["type"] == "fp"]
+            fns = [d for d in detections if d["type"] == "fn"]
+            p = []
+            r = []
+
+            # move all detections with an iou under the threshold from the tp set to the fp set
+            i = 0
+            while i < len(tps):
+                if tps[i]["iou"] < iou_thresh:
+                    fps.append(tps.pop(i))
+                else:
+                    i += 1
+
+            # compute PR curve for various confidence levels
+            for conf_thresh in np.arange(0.0, 1.0, 1.0 / nsamples):
+                # remove all prediction with a confidence bellow the threshold
+                i = 0
+                while i < len(tps):
+                    if tps[i]["pred_score"] < conf_thresh:
+                        tps.pop(i)
+                    else:
+                        i += 1
+                i = 0
+                while i < len(fps):
+                    if fps[i]["pred_score"] < conf_thresh:
+                        fps.pop(i)
+                    else:
+                        i += 1
+
+                # compute p and r values for current confidence threshold
+                p.append(0 if len(tps) == 0 else len(tps) / (len(tps) + len(fps)))
+                r.append(0 if len(tps) == 0 else len(tps) / (len(tps) + len(fns)))
+
+            # compute AP using 11 Point Interpolation of PR Curve
+            p = [0.0] + p
+            r = [r[0] + 0.000001] + r
+            interpolation_samples = []
+            r_idx = 0
+            for r_cutoff in np.arange(1.0, -0.0001, -0.01):
+                while r_idx < len(r)-1 and r[r_idx] > r_cutoff:
+                    r_idx += 1
+                interpolation_samples.append(max(p[:r_idx+1]))
+            aps.append(np.mean(interpolation_samples))
+
+        return np.mean(aps)
 
     @staticmethod
     def compute_pr(detections, nsamples=100, iou_thresh=0.5, min_area=0.0, max_area=1.0):
