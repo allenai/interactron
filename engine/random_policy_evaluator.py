@@ -260,6 +260,7 @@ class RandomPolicyEvaluator:
         aps = []
         unique_cats = list(set([d['pred_cat'] for d in detections]))
         for cat in unique_cats:
+            cat_aps = []
             cat_detections = [d for d in detections if d["pred_cat"] == cat]
             cat_detections = [d for d in cat_detections if min_area < d["area"] < max_area]
 
@@ -312,7 +313,9 @@ class RandomPolicyEvaluator:
                     while r_idx < len(r)-1 and r[r_idx] > r_cutoff:
                         r_idx += 1
                     interpolation_samples.append(max(p[:r_idx+1]))
-                aps.append(np.mean(interpolation_samples))
+                    cat_aps.append(np.mean(interpolation_samples))
+            aps.append(np.mean(cat_aps))
+            print("{}: {:06f}".format(cat, np.mean(cat_aps)))
 
         return np.mean(aps)
 
