@@ -12,8 +12,8 @@ DATASET:
   TRAIN:
     TYPE: "sequence"
     MODE: "train"
-    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train.json"
-    IMAGE_ROOT: "data/interactron/train"
+    ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_train-full.json"
+    IMAGE_ROOT: "data/interactron/train-full"
   TEST:
     TYPE: "sequence"
     MODE: "test"
