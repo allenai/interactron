@@ -121,7 +121,7 @@ class interactron(nn.Module):
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
 
             # lowest loss policy experiment
-            first_frame_out = {k: v[0, [0]] for k, v in post_adaptive_out.items()}
+            first_frame_out = {k: v[[0]] for k, v in post_adaptive_out.items()}
             gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
             gt_loss = gt_loss["loss_ce"] + 5 * gt_loss["loss_giou"] + 2 * gt_loss["loss_bbox"]
             iip = data["initial_image_path"][task]
