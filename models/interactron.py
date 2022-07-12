@@ -102,28 +102,40 @@ class interactron(nn.Module):
             learned_loss = torch.norm(fusion_out["loss"])
             detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
                                                 allow_unused=True)
-            first_frame_out = {k: v[0, [0]] for k, v in pre_adaptive_out.items()}
+            # first_frame_out = {k: v[0, [0]] for k, v in pre_adaptive_out.items()}
+            # gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
+            # gt_loss = gt_loss["loss_ce"] + 5 * gt_loss["loss_giou"] + 2 * gt_loss["loss_bbox"]
+            # gt_grad = torch.autograd.grad(gt_loss, detached_theta_task, create_graph=False, retain_graph=True,
+            #                               allow_unused=True)
+            # iip = data["initial_image_path"][task]
+            # rew = torch.mean(torch.stack([torch.norm(detector_grad[i] - gt_grad[i], p=1)
+            #                               for i in range(len(detector_grad))], dim=0)).item()
+            # if iip not in self.path_storage:
+            #     self.path_storage[iip] = PathStorage()
+            # self.path_storage[iip].add_path(data["actions"][task][:4], rew)
+            # best_path = torch.tensor(self.path_storage[iip].get_label(data["actions"][task][:4]),
+            #                          dtype=torch.long, device=gt_loss.device)
+
+            fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
+            set_parameters(self.detector, fast_weights)
+            post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+
+            # lowest loss policy experiment
+            first_frame_out = {k: v[0, [0]] for k, v in post_adaptive_out.items()}
             gt_loss = self.criterion(first_frame_out, [labels[task][0]], background_c=0.1)
             gt_loss = gt_loss["loss_ce"] + 5 * gt_loss["loss_giou"] + 2 * gt_loss["loss_bbox"]
-            gt_grad = torch.autograd.grad(gt_loss, detached_theta_task, create_graph=False, retain_graph=True,
-                                          allow_unused=True)
             iip = data["initial_image_path"][task]
-            rew = torch.mean(torch.stack([torch.norm(detector_grad[i] - gt_grad[i], p=1)
-                                          for i in range(len(detector_grad))], dim=0)).item()
+            rew = torch.mean(gt_loss).item()
             if iip not in self.path_storage:
                 self.path_storage[iip] = PathStorage()
             self.path_storage[iip].add_path(data["actions"][task][:4], rew)
             best_path = torch.tensor(self.path_storage[iip].get_label(data["actions"][task][:4]),
                                      dtype=torch.long, device=gt_loss.device)
 
-            fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
-            set_parameters(self.detector, fast_weights)
-
-            post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
+            # post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
             supervisor_loss = self.criterion(post_adaptive_out, labels[task], background_c=0.1)
             supervisor_loss["loss_path"] = F.cross_entropy(fusion_out["actions"].view(4, 4), best_path)
-            supervisor_loss["ifga"] = torch.mean(torch.stack([torch.norm(detector_grad[i] - gt_grad[i], p=1) 
-                                                              for i in range(len(detector_grad))], dim=0))
+            supervisor_loss["policy_reward"] = gt_loss
             supervisor_losses.append({k: v.detach() for k, v in supervisor_loss.items()})
             supervisor_loss = supervisor_loss["loss_ce"] + 5 * supervisor_loss["loss_giou"] + \
                               2 * supervisor_loss["loss_bbox"] + supervisor_loss["loss_path"]
@@ -134,15 +146,11 @@ class interactron(nn.Module):
             set_parameters(self.detector, fast_weights)
 
             ridx = random.randint(0, 4)
-            # ridx = 0
             post_adaptive_out = self.detector(NestedTensor(img[task][ridx:ridx+1], mask[task][ridx:ridx+1]))
             detector_loss = self.criterion(post_adaptive_out, labels[task][ridx:ridx+1], background_c=0.1)
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
             detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
             detector_loss.backward()
-
-            # with torch.no_grad():
-            #     post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
