@@ -17,9 +17,9 @@ def evaluate_all():
     evaluator = build_evaluator(model, cfg, load_checkpoint=False)
 
     results = {}
-    checkpoints = glob.glob("training_results/interactron_random/06-26-2022:06:12:51/detectordetector*")
+    checkpoints = glob.glob("training_results/interactron/07-08-2022:20:39:03/detectordetector*")
     checkpoints.sort()
-    checkpoints = checkpoints[100:200]
+    # checkpoints = checkpoints[100:200]
     for checkpoint in tqdm.tqdm(checkpoints):
         weights = torch.load(checkpoint, map_location='cpu')['model']
         evaluator.model.load_state_dict(weights)
@@ -33,7 +33,7 @@ def evaluate_all():
             "fns": fns
         }
 
-    with open('interactron_random_results_300_to_400.json', 'w') as fp:
+    with open('interactron_new_results_2.json', 'w') as fp:
         json.dump(results, fp)
 
 

@@ -41,7 +41,7 @@ TRAINER:
   GRAD_NORM_CLIP: 1.0
   WEIGHT_DECAY: 0.1
   OPTIM_TYPE: "Adam"
-  LR_DECAY: True
+  LR_DECAY: False
   WARMUP_TOKENS: 0
   FINAL_TOKENS: 0.8e7
   OUTPUT_DIRECTORY: "training_results/interactron"
