@@ -53,6 +53,7 @@ def evaluate_all():
             joined_weights[k] = mean_join([m[k] for m in models])
 
         evaluator.model.load_state_dict(joined_weights)
+        torch.save(joined_weights, "{}.pt".format(group_name))
         mAP_50, mAP, tps, fps, fns = evaluator.evaluate(save_results=False)
         print(group_name, "mAP_50:", mAP_50, "mAP:", mAP)
         results[group_name] = {
