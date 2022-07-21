@@ -34,8 +34,8 @@ class SequenceDataset(Dataset):
         scene = self.annotations["data"][idx]
 
         # seed the random generator
-        if self.mode == "test":
-            actions = ['MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead', 'MoveAhead']
+        if self.mode == "test" and actions is None:
+            actions = ['RotateLeft', 'MoveAhead', 'RotateLeft', 'MoveBack', 'RotateRight']
 
         state_name = scene["root"]
         state = scene["state_table"][state_name]

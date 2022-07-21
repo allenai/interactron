@@ -59,6 +59,7 @@ class interactron(nn.Module):
         post_adaptive_out = self.detector(NestedTensor(img[0:1], mask[0:1]))
 
         set_parameters(self.detector, theta)
+        # post_adaptive_out = pre_adaptive_out
 
         return {k: v.unsqueeze(0) for k, v in post_adaptive_out.items()}
 

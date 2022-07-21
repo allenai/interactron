@@ -62,7 +62,10 @@ class RandomPolicyEvaluator:
                             collate_fn=collate_fn)
 
         detections = []
-        for data in loader:
+        for idx, data in enumerate(loader):
+
+            if idx in [20, 31]:
+                continue
 
             # place data on the correct device
             data["frames"] = data["frames"].to(self.device)
@@ -203,6 +206,7 @@ class RandomPolicyEvaluator:
         fns = [x for x in detections if x["type"] == "fn"]
 
         ap_50 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.5])
+        ap_75 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.75])
         ap = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)))
         ap_small = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
                                    min_area=0.0, max_area=32**2/300**2)
@@ -214,7 +218,7 @@ class RandomPolicyEvaluator:
         if not save_results:
             return ap_50, ap, len(tps), len(fps), len(fns)
 
-        print("AP_50:", ap_50)
+        print("AP_50:", ap_50, "AP_75", ap_75, "AP", ap, "AP_small", ap_small, "AP_medium", ap_medium, "AP_large", ap_large)
 
 
         results = {

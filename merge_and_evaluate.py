@@ -50,10 +50,10 @@ def evaluate_all():
         models = [torch.load(mp, map_location='cpu')['model'] for mp in group_weight_paths]
         joined_weights = {}
         for k in models[0].keys():
-            joined_weights[k] = mean_join([m[k] for m in models])
+            joined_weights[k] = exponential_weighted_join([m[k] for m in models])
 
         evaluator.model.load_state_dict(joined_weights)
-        torch.save(joined_weights, "{}.pt".format(group_name))
+        torch.save({"model": joined_weights}, "{}.pt".format(group_name))
         mAP_50, mAP, tps, fps, fns = evaluator.evaluate(save_results=False)
         print(group_name, "mAP_50:", mAP_50, "mAP:", mAP)
         results[group_name] = {
