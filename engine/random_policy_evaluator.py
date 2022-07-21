@@ -86,7 +86,6 @@ class RandomPolicyEvaluator:
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
-                    # pred_cats -= 1
                     # perform nms
                     pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
                     pred_cats = pred_cats[pruned_idxs]
@@ -203,49 +202,21 @@ class RandomPolicyEvaluator:
         fps = [x for x in detections if x["type"] == "fp"]
         fns = [x for x in detections if x["type"] == "fn"]
 
-        # p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
-        # ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
-        # aps = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
-        #     aps.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # aps_small = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=0.0, max_area=32**2/300**2)
-        #     aps_small.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # aps_medium = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh,
-        #                             min_area=32**2/300**2, max_area=96**2/300**2)
-        #     aps_medium.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # aps_large = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
-        #     aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-
         ap_50 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.5])
         ap = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)))
-        # ap_small = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
-        #                            min_area=0.0, max_area=32**2/300**2)
-        # ap_medium = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
-        #                            min_area=32**2/300**2, max_area=96**2/300**2)
-        # ap_large = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
-        #                            min_area=96**2/300**2, max_area=1.0)
+        ap_small = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+                                   min_area=0.0, max_area=32**2/300**2)
+        ap_medium = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+                                   min_area=32**2/300**2, max_area=96**2/300**2)
+        ap_large = self.compute_ap(detections, nsamples=100, iou_thresholds=list(np.arange(0.5, 1.0, 0.05)),
+                                   min_area=96**2/300**2, max_area=1.0)
 
         if not save_results:
             return ap_50, ap, len(tps), len(fps), len(fns)
 
         print("AP_50:", ap_50)
 
-        # plt.plot(r, p)
-        # plt.title("PR Curve | AP_50=" + str(ap_50))
-        # plt.xlabel("Recall")
-        # plt.ylabel("Precision")
-        # plt.savefig(self.out_dir + "pr_curve.png")
-        #
+
         results = {
             "AP_50": ap_50,
             "detections": detections

@@ -215,12 +215,6 @@ class InteractiveDaatset(Dataset):
                     state_name = state["actions"][actions[i]]
                 else:
                     state_name = random.choice(list(scene["state_table"]))
-                    # for j in range(len(actions)):
-                    #     new_state_name = state["actions"][actions[i+j % len(actions)]]
-                    #     if new_state_name != state_name:
-                    #         state_name = new_state_name
-                    #         break
-                state_name = state["actions"][actions[i]]
                 state = scene["state_table"][state_name]
 
         sample = {

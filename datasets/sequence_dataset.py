@@ -1,16 +1,10 @@
 import torch
 from torch.utils.data import Dataset
-from torchvision.io import read_image
 import json
 import random
-import time
-import cv2
-import hashlib
-import numpy as np
 from PIL import Image
 
 from utils.constants import ACTIONS
-from models.detr_models.util.box_ops import box_xyxy_to_cxcywh
 
 
 class SequenceDataset(Dataset):
@@ -68,7 +62,6 @@ class SequenceDataset(Dataset):
                 img_class_ids.append(v["category_id"]+1)
                 w, h, cw, ch = v["bbox"]
                 img_bounding_boxes.append([w, h, w+cw, h+ch])
-            # bounding_boxes.append(img_bounding_boxes)
             # apply transforms to image
             if len(img_bounding_boxes) != 0:
                 boxes = torch.tensor(img_bounding_boxes, dtype=torch.float)
@@ -87,19 +80,8 @@ class SequenceDataset(Dataset):
             object_ids.append(img_object_ids)
             category_ids.append(targets["labels"] if targets is not None else torch.zeros(0).long())
             if i < 4:
-                # if self.mode == "test":
-                #     state_name = state["actions"][actions[i]]
-                # else:
-                #     state_name = random.choice(list(scene["state_table"]))
                 state_name = state["actions"][actions[i]]
                 state = scene["state_table"][state_name]
-
-        # print(actions)
-        # import matplotlib.pyplot as plt
-        # for i, frame in enumerate(frames):
-        #     plt.subplot(1, 5, i+1)
-        #     plt.imshow(frame.detach().cpu().permute(1, 2, 0).numpy())
-        # plt.show()
 
         sample = {
             'frames': frames,
