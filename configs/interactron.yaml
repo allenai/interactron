@@ -48,8 +48,10 @@ TRAINER:
 EVALUATOR:
   TYPE: "interactive_evaluator"
   # TYPE: "random_policy_evaluator"
+  # TYPE: "every_path_evaluator"
   BATCH_SIZE: 1
   NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/interactron"
+  CHECKPOINT: "interactron.pt"
   # CHECKPOINT: "pretrained_weights/interactron.pth"
-  CHECKPOINT: "training_results/interactron/06-28-2022:18:51:44/detectordetector_0126.pt"
+  # CHECKPOINT: "training_results/interactron/06-28-2022:18:51:44/detectordetector_0126.pt"

@@ -17,7 +17,7 @@ def evaluate_all():
     evaluator = build_evaluator(model, cfg, load_checkpoint=False)
 
     results = {}
-    checkpoints = glob.glob("training_results/interactron/07-08-2022:20:39:03/detectordetector*")
+    checkpoints = glob.glob("training_results/detr_multiframe/07-07-2022:02:33:04/detectordetector*")
     checkpoints.sort()
     # checkpoints = checkpoints[100:200]
     for checkpoint in tqdm.tqdm(checkpoints):
