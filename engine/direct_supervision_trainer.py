@@ -48,8 +48,10 @@ class DirectSupervisionTrainer:
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
         raw_parameters = raw_model.state_dict()
         if self.saved_checkpoints is None:
+            print("New Save", w)
             self.saved_checkpoints = {k: w * v for k, v in raw_parameters.items()}
         else:
+            print("Add on save", w)
             for param_name, weight in raw_parameters.items():
                 self.saved_checkpoints[param_name] += w * raw_parameters[param_name]
 
@@ -156,5 +158,5 @@ class DirectSupervisionTrainer:
 
             # supports early stopping based on the test loss, or just save always if no test set is provided
             if self.test_dataset is not None and config.MAX_EPOCHS - epoch < config.SAVE_WINDOW:
-                self.record_checkpoint(w=1/self.SAVE_WINDOW)
+                self.record_checkpoint(w=1/config.SAVE_WINDOW)
             self.save_checkpoint()
