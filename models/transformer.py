@@ -35,14 +35,10 @@ class Transformer(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.img_feature_embedding = nn.Linear(config.IMG_FEATURE_SIZE, config.EMBEDDING_DIM)
-        # self.prediction_embedding = nn.Linear(config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
         self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE + config.NUM_CLASSES + 5, config.EMBEDDING_DIM)
-        # self.prediction_embedding = nn.Linear(config.BOX_EMB_SIZE, config.EMBEDDING_DIM)
         self.model = GPT(config)
         self.box_decoder = MLP(config.OUTPUT_SIZE, 256, 4, 3)
         self.logit_decoder = nn.Linear(config.OUTPUT_SIZE, config.NUM_CLASSES + 1)
-        # self.logit_decoder = MLP(config.OUTPUT_SIZE, 512, config.NUM_CLASSES + 1, 5)
-        # self.logit_decoder = MLP(config.OUTPUT_SIZE, 512, config.NUM_CLASSES + 1, 3)
         self.loss_decoder = MLP(config.OUTPUT_SIZE, 512, 1, 3)
         self.action_decoder = MLP(config.OUTPUT_SIZE, 512, 4, 3)
         self.action_tokens = nn.Parameter(nn.init.kaiming_uniform_(torch.empty(1, 5, config.EMBEDDING_DIM),

@@ -70,7 +70,6 @@ class DirectSupervisionTrainer:
 
         def run_epoch(split):
             is_train = split == 'train'
-            # model.train(False)
             loader = DataLoader(self.train_dataset if is_train else self.test_dataset, shuffle=is_train,
                                 pin_memory=True, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS,
                                 collate_fn=collate_fn)
@@ -84,13 +83,6 @@ class DirectSupervisionTrainer:
                 data["masks"] = data["masks"].to(self.device)
                 data["category_ids"] = [[j.to(self.device) for j in i] for i in data["category_ids"]]
                 data["boxes"] = [[j.to(self.device) for j in i] for i in data["boxes"]]
-
-                # shuffle positions
-                # order = torch.randperm(5)
-                # data["frames"] = data["frames"][:, order]
-                # data["masks"] = data["masks"][:, order]
-                # data["category_ids"] = [[b[i.item()] for i in order] for b in data["category_ids"]]
-                # data["boxes"] = [[b[i.item()] for i in order] for b in data["boxes"]]
 
                 # forward the model
                 predictions, losses = model(data)

@@ -33,10 +33,10 @@ Bellow is a summary of the results of the various models.
 
 | Model            | Policy   | Adaptive | AP    | AP_50 |
 |------------------|----------|----------|-------|-------|
-| DETR             | No Move  | No       | 0.364 | 0.454 | 
-| Multi-Frame      | Random   | No       | 0.421 | 0.541 | 
-| Interactron-Rand | Random   | Yes      | 0.456 | 0.559 | 
-| Interactron      | Learned  | Yes      | 0.482 | 0.645 | 
+| DETR             | No Move  | No       | 0.256 | 0.448 | 
+| Multi-Frame      | Random   | No       | 0.288 | 0.517 | 
+| Interactron-Rand | Random   | Yes      | 0.313 | 0.551 | 
+| Interactron      | Learned  | Yes      | 0.328 | 0.575 | 
 
 For more detaile results please see the full paper 
 [Interactron: Embodied Adaptive Object Detection](https://arxiv.org/abs/2202.00660).
