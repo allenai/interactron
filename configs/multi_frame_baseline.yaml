@@ -33,8 +33,8 @@ TRAINER:
   TYPE: "direct_supervision"
   BATCH_SIZE: 16
   NUM_WORKERS: 16
-  MAX_EPOCHS: 10
-  SAVE_WINDOW: 5
+  MAX_EPOCHS: 2000
+  SAVE_WINDOW: 500
   LEARNING_RATE: 1e-5
   BETA1: 0.9
   BETA2: 0.95
@@ -51,4 +51,4 @@ EVALUATOR:
   BATCH_SIZE: 1
   NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/multi_frame_baseline"
-  CHECKPOINT: pretrained_weights/detr_multiframe.pt
+  CHECKPOINT: "pretrained_weights/detr_multiframe.pt"

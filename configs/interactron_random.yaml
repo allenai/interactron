@@ -34,8 +34,8 @@ TRAINER:
   TYPE: "interactron_random"
   BATCH_SIZE: 16
   NUM_WORKERS: 16
-  MAX_EPOCHS: 10
-  SAVE_WINDOW: 5
+  MAX_EPOCHS: 2000
+  SAVE_WINDOW: 500
   DETECTOR_LR: 1e-4
   SUPERVISOR_LR: 1e-5
   BETA1: 0.9
@@ -49,12 +49,8 @@ TRAINER:
   FINAL_TOKENS: 1.0e7
   OUTPUT_DIRECTORY: "training_results/interactron_random"
 EVALUATOR:
-  # TYPE: "every_path_evaluator"
   TYPE: "random_policy_evaluator"
   BATCH_SIZE: 1
   NUM_WORKERS: 1
   OUTPUT_DIRECTORY: "evaluation_results/interactron_random"
-  CHECKPOINT: "interactron_random.pt"
-  # CHECKPOINT: "training_results/interactron_random/joined.pt"
-  # CHECKPOINT: "pretrained_weights/interactron_random_53.pt"
-  # CHECKPOINT: "pretrained_weights/interactron-rand.pth"
+  CHECKPOINT: "pretrained_weights/interactron_random.pt"
