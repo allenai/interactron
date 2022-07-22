@@ -22,6 +22,7 @@ class interactron_random(nn.Module):
         self.fusion = Transformer(config)
         self.logger = None
         self.mode = 'train'
+        self.config = config
 
     def predict(self, data):
 
