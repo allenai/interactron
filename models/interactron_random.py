@@ -1,16 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import math
 
 from models.detr_models.detr import build
 from models.detr_models.util.misc import NestedTensor
 from models.new_transformer import Transformer
-from models.learner import Learner
 from utils.meta_utils import get_parameters, clone_parameters, sgd_step, set_parameters, detach_parameters, \
     detach_gradients
-
-LR = 1e-3
 
 
 class interactron_random(nn.Module):
@@ -50,7 +45,7 @@ class interactron_random(nn.Module):
         learned_loss = torch.norm(fusion_out["loss"])
         detector_grad = torch.autograd.grad(learned_loss, theta_task, create_graph=True, retain_graph=True,
                                             allow_unused=True)
-        fast_weights = sgd_step(theta_task, detector_grad, LR)
+        fast_weights = sgd_step(theta_task, detector_grad, self.config.ADAPTIVE_LR)
         set_parameters(self.detector, fast_weights)
         post_adaptive_out = self.detector(NestedTensor(img[0:1], mask[0:1]))
 
@@ -97,7 +92,7 @@ class interactron_random(nn.Module):
             learned_loss = torch.norm(fusion_out["loss"])
             detector_grad = torch.autograd.grad(learned_loss, detached_theta_task, create_graph=True, retain_graph=True,
                                                 allow_unused=True)
-            fast_weights = sgd_step(detached_theta_task, detector_grad, LR)
+            fast_weights = sgd_step(detached_theta_task, detector_grad, self.config.ADAPTIVE_LR)
             set_parameters(self.detector, fast_weights)
 
             post_adaptive_out = self.detector(NestedTensor(img[task], mask[task]))
@@ -107,7 +102,7 @@ class interactron_random(nn.Module):
             supervisor_loss.backward()
 
             # get detector grads
-            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), LR)
+            fast_weights = sgd_step(theta_task, detach_gradients(detector_grad), self.config.ADAPTIVE_LR)
             set_parameters(self.detector, fast_weights)
 
             import random
@@ -118,9 +113,6 @@ class interactron_random(nn.Module):
             detector_losses.append({k: v.detach() for k, v in detector_loss.items()})
             detector_loss = detector_loss["loss_ce"] + 5 * detector_loss["loss_giou"] + 2 * detector_loss["loss_bbox"]
             detector_loss.backward()
-
-            # with torch.no_grad():
-            #     post_adaptive_out = self.detector(NestedTensor(img[task][0:1], mask[task][0:1]))
 
             out_logits_list.append(post_adaptive_out["pred_logits"])
             out_boxes_list.append(post_adaptive_out["pred_boxes"])
@@ -146,7 +138,6 @@ class interactron_random(nn.Module):
         # only train proposal generator of detector
         self.detector.train(mode)
         self.fusion.train(mode)
-        # self.decoder.train(mode)
         return self
 
     def get_optimizer_groups(self, train_config):

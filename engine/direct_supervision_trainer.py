@@ -156,7 +156,6 @@ class DirectSupervisionTrainer:
                 run_evaluation()
             self.logger.log_values()
 
-            # supports early stopping based on the test loss, or just save always if no test set is provided
             if self.test_dataset is not None and config.MAX_EPOCHS - epoch <= config.SAVE_WINDOW:
                 self.record_checkpoint(w=1/config.SAVE_WINDOW)
         self.save_checkpoint()

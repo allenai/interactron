@@ -32,6 +32,7 @@ class InteractronRandomTrainer:
         self.logger = TBLogger(os.path.join(self.out_dir, "logs"))
         self.model.set_logger(self.logger)
         self.checkpoint_path = os.path.join(self.out_dir, "detector.pt")
+        self.saved_checkpoints = None
 
         self.train_dataset = SequenceDataset(config.DATASET.TRAIN.IMAGE_ROOT, config.DATASET.TRAIN.ANNOTATION_ROOT,
                                         config.DATASET.TRAIN.MODE, transform=train_transform)
@@ -44,10 +45,24 @@ class InteractronRandomTrainer:
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
 
-    def save_checkpoint(self, name=None):
-        # DataParallel wrappers keep raw model object in .module attribute
+    def record_checkpoint(self, w=1.0):
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        torch.save({"model": raw_model.state_dict()}, self.checkpoint_path if name is None else name)
+        raw_parameters = raw_model.state_dict()
+        if self.saved_checkpoints is None:
+            print("New Save", w)
+            self.saved_checkpoints = {k: w * v for k, v in raw_parameters.items()}
+        else:
+            print("Add on save", w)
+            for param_name, weight in raw_parameters.items():
+                self.saved_checkpoints[param_name] += w * weight
+
+    def save_checkpoint(self):
+        if self.saved_checkpoints is None:
+            raw_model = self.model.module if hasattr(self.model, "module") else self.model
+            raw_parameters = raw_model.state_dict()
+        else:
+            raw_parameters = self.saved_checkpoints
+        torch.save({"model": raw_parameters}, self.checkpoint_path)
 
     def train(self):
         model, config = self.model, self.config.TRAINER
@@ -133,20 +148,16 @@ class InteractronRandomTrainer:
             supervisor_optimizer.zero_grad()
             return mAP
 
-        best_ap = 0.0
         self.tokens = 0  # counter used for learning rate decay
-        mAP = run_evaluation()
+        run_evaluation()
         self.logger.log_values()
         for epoch in range(1, config.MAX_EPOCHS):
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
-                mAP = run_evaluation()
-            # detector_optimizer.zero_grad()
-            # supervisor_optimizer.zero_grad()
+                run_evaluation()
             self.logger.log_values()
 
-            # supports early stopping based on the test loss, or just save always if no test set is provided
-            if self.test_dataset is not None and self.evaluator is not None and mAP > best_ap:
-                best_ap = mAP
-                self.save_checkpoint()
-            self.save_checkpoint(name=self.checkpoint_path.replace(".pt", "detector_{:04d}.pt".format(epoch)))
+            if self.test_dataset is not None and config.MAX_EPOCHS - epoch <= config.SAVE_WINDOW:
+                self.record_checkpoint(w=1 / config.SAVE_WINDOW)
+        self.save_checkpoint()
+
