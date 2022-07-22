@@ -119,13 +119,11 @@ class InteractronRandomTrainer:
                             progress = float(self.tokens - config.WARMUP_TOKENS) / \
                                        float(max(1, config.FINAL_TOKENS - config.WARMUP_TOKENS))
                             lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
-                        lr = config.LEARNING_RATE * lr_mult
+                        lr = config.SUPERVISOR_LR * lr_mult
                         for param_group in supervisor_optimizer.param_groups:
                             param_group['lr'] = lr
-                        # for param_group in detector_optimizer.param_groups:
-                        #     param_group['lr'] = lr
                     else:
-                        lr = config.LEARNING_RATE
+                        lr = config.SUPERVISOR_LR
 
                     # report progress
                     pbar.set_description(
