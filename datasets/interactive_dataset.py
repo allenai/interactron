@@ -184,15 +184,8 @@ class InteractiveDaatset(Dataset):
             for k, v in state["detections"].items():
                 img_object_ids.append(hash(k.encode()))
                 img_class_ids.append(v["category_id"])
-                # # convery bbox coordinates from xywh to cxcywh
-                # w, h = v["bbox"][-2:]
-                # cx = v["bbox"][0] + (w / 2)
-                # cy = v["bbox"][1] + (h / 2)
-                # # normalize between 0.0 and 1.0
-                # img_bounding_boxes.append([cx / imgw, cy / imgh, w / imgw, h / imgh])
                 w, h, cw, ch = v["bbox"]
                 img_bounding_boxes.append([w, h, w+cw, h+ch])
-            # bounding_boxes.append(img_bounding_boxes)
             # apply transforms to image
             if len(img_bounding_boxes) != 0:
                 boxes = torch.tensor(img_bounding_boxes, dtype=torch.float)

@@ -3,14 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime
-import json
 from PIL import ImageDraw, ImageFont
 import torch
-from torch.utils.data.dataloader import DataLoader
 
 from utils.constants import THOR_CLASS_IDS, tlvis_classes
-from utils.detection_utils import compute_AP, match_predictions_to_detections
-from utils.storage_utils import collate_fn
+from utils.detection_utils import match_predictions_to_detections
 from utils.transform_utis import transform, inv_transform
 from models.detr_models.util.box_ops import box_cxcywh_to_xyxy
 from datasets.interactive_dataset import InteractiveDaatset
@@ -42,10 +39,6 @@ class InteractiveEvaluator:
             os.makedirs(self.out_dir + "images/", exist_ok=True)
 
         model, config = self.model, self.config.EVALUATOR
-        # model.train(False)
-        # loader = DataLoader(self.test_dataset, shuffle=False, pin_memory=True,
-        #                     batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS,
-        #                     collate_fn=collate_fn)
         loader = self.test_dataset
 
         detections = []
@@ -72,7 +65,6 @@ class InteractiveEvaluator:
                 data["category_ids"] = [[j.to(self.device) for j in i] for i in data["category_ids"]]
                 data["boxes"] = [[j.to(self.device) for j in i] for i in data["boxes"]]
 
-
             # forward the model
             predictions = model.predict(data)
 
@@ -86,21 +78,17 @@ class InteractiveEvaluator:
                     gt_cats = data["category_ids"][b][0]
                     # remove background predictions
                     non_background_idx = pred_cats != 1235
-                    # pred_cats -= 1
                     pred_boxes = pred_boxes[non_background_idx]
                     pred_cats = pred_cats[non_background_idx]
                     pred_scores = pred_scores[non_background_idx]
                     # perform nms
                     pruned_idxs = torchvision.ops.nms(pred_boxes, pred_scores, iou_threshold=0.5)
-                    # pruned_idxs = pruned_idxs[pred_cats[pruned_idxs] != 1235]
                     pred_cats = pred_cats[pruned_idxs]
                     pred_boxes = pred_boxes[pruned_idxs]
                     pred_scores = pred_scores[pruned_idxs]
                     # get sets of categories of predictions and labels
                     pred_cat_set = set([int(c) for c in pred_cats])
                     gt_cat_set = set([int(c) for c in gt_cats])
-                    # pred_cat_set = set(pred_cats)
-                    # gt_cat_set = set(gt_cats)
                     pred_only_cat_set = set(THOR_CLASS_IDS).intersection(pred_cat_set - gt_cat_set)
                     # add each prediction to the list of detections
                     for cat in gt_cat_set:
@@ -180,20 +168,18 @@ class InteractiveEvaluator:
                     detections = detections + img_detections
                     if save_results:
                         img = inv_transform(data["frames"][b][0].detach().cpu()).resize((1200, 1200))
-                        # font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-C.ttf", 20)
                         font = ImageFont.load_default()
                         draw = ImageDraw.Draw(img)
                         for det in img_detections:
                             color = None
                             if det["type"] == "tp":
-                                # color = "blue"
                                 if det["iou"] >= 0.5:
                                     color = "blue"
                                 else:
                                     color = "black"
                             if det["type"] == "fn":
                                 continue
-                            if det["type"] == "fp": # and det["pred_score"] > 0.5:
+                            if det["type"] == "fp" and det["pred_score"] > 0.5:
                                 continue
                             if color is not None:
                                 draw.rectangle([1200 * c for c in det["box"]], outline=color, width=2)
@@ -208,49 +194,6 @@ class InteractiveEvaluator:
         tps = [x for x in detections if x["type"] == "tp"]
         fps = [x for x in detections if x["type"] == "fp"]
         fns = [x for x in detections if x["type"] == "fn"]
-
-        # aps = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh)
-        #     aps.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # aps_small = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=0.0, max_area=32**2/300**2)
-        #     aps_small.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # aps_medium = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh,
-        #                             min_area=32**2/300**2, max_area=96**2/300**2)
-        #     aps_medium.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # aps_large = []
-        # for thresh in np.arange(0.5, 1.0, 0.05):
-        #     p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=thresh, min_area=96**2/300**2, max_area=1.0)
-        #     aps_large.append(compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))]))
-        #
-        # p, r, = self.compute_pr(detections, nsamples=100, iou_thresh=0.5)
-        # ap_50 = compute_AP([{"precision": p[i], "recall": r[i]} for i in range(len(p))])
-        # print("AP_50:", ap_50)
-        #
-        # if not save_results:
-        #     return ap_50, np.mean(aps), len(tps), len(fps), len(fns)
-        #
-        # plt.plot(r, p)
-        # plt.title("PR Curve | AP_50=" + str(ap_50))
-        # plt.xlabel("Recall")
-        # plt.ylabel("Precision")
-        # plt.savefig(self.out_dir + "pr_curve.png")
-        #
-        # results = {
-        #     "AP_50": ap_50,
-        #     "detections": detections
-        # }
-        #
-        # os.makedirs(self.out_dir, exist_ok=True)
-        # with open(self.out_dir + "results.json", 'w') as f:
-        #     json.dump(results, f)
 
         ap_50 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.5])
         ap_75 = self.compute_ap(detections, nsamples=100, iou_thresholds=[0.75])

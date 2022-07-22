@@ -53,7 +53,7 @@ class DirectSupervisionTrainer:
         else:
             print("Add on save", w)
             for param_name, weight in raw_parameters.items():
-                self.saved_checkpoints[param_name] += w * raw_parameters[param_name]
+                self.saved_checkpoints[param_name] += w * weight
 
     def save_checkpoint(self):
         if self.saved_checkpoints is None:
@@ -159,4 +159,4 @@ class DirectSupervisionTrainer:
             # supports early stopping based on the test loss, or just save always if no test set is provided
             if self.test_dataset is not None and config.MAX_EPOCHS - epoch < config.SAVE_WINDOW:
                 self.record_checkpoint(w=1/config.SAVE_WINDOW)
-            self.save_checkpoint()
+        self.save_checkpoint()

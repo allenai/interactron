@@ -4,7 +4,6 @@ The interactorn model is trained on random sequences of data and supervised to p
 """
 
 import math
-import random
 
 from tqdm import tqdm
 import numpy as np
@@ -29,7 +28,7 @@ class InteractronTrainer:
 
         # set up logging and saving
         self.out_dir = os.path.join(self.config.TRAINER.OUTPUT_DIRECTORY, datetime.now().strftime("%m-%d-%Y:%H:%M:%S"))
-        # os.makedirs(self.out_dir, exist_ok=True)
+        os.makedirs(self.out_dir, exist_ok=True)
         self.logger = TBLogger(os.path.join(self.out_dir, "logs"))
         self.model.set_logger(self.logger)
         self.checkpoint_path = os.path.join(self.out_dir, "detector.pt")
@@ -54,10 +53,8 @@ class InteractronTrainer:
 
         model, config = self.model, self.config.TRAINER
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=1e-5)
-        supervisor_optimizer = torch.optim.Adam(raw_model.fusion.parameters(), lr=1e-4)
-        # supervisor_optimizer = torch.optim.Adam(raw_model.fusion.get_optimizer_groups(config), lr=1e-4,
-        #                                         betas=(config.BETA1, config.BETA2), weight_decay=config.WEIGHT_DECAY)
+        detector_optimizer = torch.optim.Adam(raw_model.detector.parameters(), lr=config.DETECTOR_LR)
+        supervisor_optimizer = torch.optim.Adam(raw_model.fusion.parameters(), lr=config.SUPERVISOR_LR)
         model.train()
 
         def run_epoch(split):
@@ -110,16 +107,10 @@ class InteractronTrainer:
                                        float(max(1, config.FINAL_TOKENS - config.WARMUP_TOKENS))
                             lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
                         lr = config.LEARNING_RATE * lr_mult
-                        # for param_group in supervisor_optimizer.param_groups:
-                        #     param_group['lr'] = lr
-                        # for param_group in detector_optimizer.param_groups:
-                        #     param_group['lr'] = lr
                         for param_group in supervisor_optimizer.param_groups:
                             param_group['lr'] = lr
-                        # for param_group in detector_optimizer.param_groups:
-                        #     param_group['lr'] = lr
                     else:
-                        lr = config.LEARNING_RATE
+                        lr = config.SUPERVISOR_LR
                     self.logger.add_value("{}/LR".format("Train" if is_train else "Test"), lr)
 
                     # report progress
@@ -145,14 +136,11 @@ class InteractronTrainer:
 
         best_ap = 0.0
         self.tokens = 0  # counter used for learning rate decay
-        # mAP = run_evaluation()
         self.logger.log_values()
         for epoch in range(1, config.MAX_EPOCHS):
             run_epoch('train')
             if epoch % 1 == 0 and self.test_dataset is not None and self.evaluator is not None:
                 mAP = run_evaluation()
-            # detector_optimizer.zero_grad()
-            # supervisor_optimizer.zero_grad()
             self.logger.log_values()
 
             # supports early stopping based on the test loss, or just save always if no test set is provided

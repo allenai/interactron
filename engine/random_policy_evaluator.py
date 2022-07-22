@@ -1,29 +1,14 @@
-import math
-import logging
-
 import torchvision.ops
-from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
-import time
-import cv2
 import os
 from datetime import datetime
 import json
-import yaml
 from PIL import ImageDraw, ImageFont
-
 import torch
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data.dataloader import DataLoader
 
 from utils.constants import THOR_CLASS_IDS, tlvis_classes
-from utils.detection_utils import iou, compute_AP, match_predictions_to_detections
-from utils.model_utils import merge_batch_seq, unmerge_batch_seq
-from utils.viz_utils import draw_pr_curve, draw_prediction_distribuion, draw_box
-from utils.detection_utils import Images, Labels
+from utils.detection_utils import match_predictions_to_detections
 from utils.storage_utils import collate_fn
 from utils.transform_utis import transform, inv_transform
 from models.detr_models.util.box_ops import box_cxcywh_to_xyxy
@@ -176,20 +161,18 @@ class RandomPolicyEvaluator:
                     detections = detections + img_detections
                     if save_results:
                         img = inv_transform(data["frames"][b][0].detach().cpu()).resize((1200, 1200))
-                        # font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-C.ttf", 20)
                         font = ImageFont.load_default()
                         draw = ImageDraw.Draw(img)
                         for det in img_detections:
                             color = None
                             if det["type"] == "tp":
-                                # color = "blue"
                                 if det["iou"] >= 0.5:
                                     color = "blue"
                                 else:
                                     color = "black"
                             if det["type"] == "fn":
                                 continue
-                            if det["type"] == "fp": # and det["pred_score"] > 0.5:
+                            if det["type"] == "fp" and det["pred_score"] > 0.5:
                                 continue
                             if color is not None:
                                 draw.rectangle([1200 * c for c in det["box"]], outline=color, width=2)
