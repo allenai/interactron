@@ -49,9 +49,6 @@ class RandomPolicyEvaluator:
         detections = []
         for idx, data in enumerate(loader):
 
-            if idx in [20, 31]:
-                continue
-
             # place data on the correct device
             data["frames"] = data["frames"].to(self.device)
             data["masks"] = data["masks"].to(self.device)

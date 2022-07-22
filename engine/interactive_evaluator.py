@@ -47,9 +47,6 @@ class InteractiveEvaluator:
             model.eval()
             data = loader.reset()
 
-            if i in [20, 31]:
-                continue
-
             # place data on the correct device
             data["frames"] = data["frames"].to(self.device)
             data["masks"] = data["masks"].to(self.device)
