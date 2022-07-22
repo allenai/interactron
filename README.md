@@ -53,7 +53,7 @@ take several minutes. The evaluator will output visualizations and results in a 
 
 Training of the Interactron model can be performed by running ``python train.py --config=configs/interactron.yaml``.
 The code will automatically take over any available GPUs. To train using the default configuration, 
-at least 24GB of VRAM is necessary. Training takes roughly one day on a high performance machine using a RTX 3090 GPU.
+at least 12GB of VRAM is necessary. Training takes roughly five days on a high performance machine using a RTX 3090 GPU.
 The trainer will output results in a folder called
 `training_results/`. To train other models, select one of the other config files in `configs/`.
 
