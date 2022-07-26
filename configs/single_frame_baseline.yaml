@@ -19,23 +19,6 @@ DATASET:
     MODE: "test"
     ANNOTATION_ROOT: "data/interactron/annotations/interactron_v1_test.json"
     IMAGE_ROOT: "data/interactron/test"
-TRAINER:
-  TYPE: "direct_supervision"
-  BATCH_SIZE: 16
-  NUM_WORKERS: 16
-  MAX_EPOCHS: 2000
-  SAVE_WINDOW: 500
-  LEARNING_RATE: 1e-5
-  BETA1: 0.9
-  BETA2: 0.95
-  MOMENTUM: 0.9
-  GRAD_NORM_CLIP: 1.0
-  WEIGHT_DECAY: 0.1
-  OPTIM_TYPE: "Adam"
-  LR_DECAY: Flase
-  WARMUP_TOKENS: 0
-  FINAL_TOKENS: 0
-  OUTPUT_DIRECTORY: "training_results/single_frame_baseline"
 EVALUATOR:
   TYPE: "random_policy_evaluator"
   BATCH_SIZE: 1
