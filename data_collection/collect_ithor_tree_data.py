@@ -31,9 +31,9 @@ NUM_STEPS = 4
 ROT_ANGLE = 30
 ACTIONS = ["MoveAhead", "MoveBack", "RotateLeft", "RotateRight"]
 SCENES = train_scenes + val_scenes if TRAIN else test_scenes
-IMG_ROOT = '../data/interactron/train' if TRAIN else '../data/interactron/val'
+IMG_ROOT = '../data/interactron/train' if TRAIN else '../data/interactron/test'
 ANN_PATH = '../data/interactron/annotations/interactron_v1_train.json' if TRAIN \
-    else '../data/interactron/annotations/interactron_v1_val.json'
+    else '../data/interactron/annotations/interactron_v1_test.json'
 CTRL = Controller(
     rotateStepDegrees=ROT_ANGLE,
     renderDepthImage=True,
